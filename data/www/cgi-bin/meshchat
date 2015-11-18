@@ -1,0 +1,159 @@
+#!/usr/bin/perl
+
+BEGIN {push @INC, '/www/cgi-bin'};
+use perlfunc;
+use meshchatlib;
+
+my %query;
+
+my $node = nvram_get("node");
+$node = "NOCALL" if $node eq "";
+
+parse_params();
+
+if ($query{action} eq 'messages') {
+    messages();
+} elsif ($query{action} eq 'send_message') {
+    send_message();
+} elsif ($query{action} eq 'messages_raw') {
+    messages_raw();
+} else {
+    error('error no action');
+}
+
+sub parse_params {
+    my $post_data;
+
+    if (length($ENV{'QUERY_STRING'}) > 0) {
+	$post_data = $ENV{'QUERY_STRING'};
+    } else {
+	foreach my $data (<STDIN>) {
+	    $post_data .= $data;
+	}
+    }
+
+    if (length ($post_data) > 0){
+	$buffer = $post_data;
+	@pairs = split(/&/, $buffer);
+	foreach $pair (@pairs){
+	    ($name, $value) = split(/=/, $pair);
+	    $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+	    $value =~ s/\+/ /g;
+	    $query{$name} = $value; 
+	}
+    }
+}
+
+sub error {
+    my $msg = shift;
+
+    print "Content-type:text\r\n\r\n";
+    print $msg;
+}
+
+sub messages {
+    print "Content-type:application/json\r\n\r\n";
+
+    my $messages = [];
+
+    get_messages_lock();
+
+    open(MSG, $messages_db_file);
+    while (<MSG>) {
+	my $line = $_;
+	chomp($line);
+
+	my @parts = split("\t", $line);
+
+	#print "$line\n";
+
+	push(@$messages, { epoch => $parts[1], message => unpack_message($parts[2]), call_sign => $parts[3], node => $parts[4] });
+    }
+    close(MSG);
+
+    release_messages_lock();
+
+    my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$messages;
+    
+    my $json = '[';
+
+    foreach my $message (@sorted) {
+	$message->{message} =~ s/\n/\\n/g;
+	$json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '"},';
+    }
+
+    chop($json);
+
+    $json .= ']';
+
+    print $json;
+
+    #print encode_json(\@sorted);
+}
+
+sub messages_raw {
+    print "Content-type:text\r\n\r\n";
+
+    get_messages_lock();
+
+    open(MSG, $messages_db_file);
+    while (<MSG>) {
+	my $line = $_;
+	print "$line";
+    }
+    close(MSG);
+
+    release_messages_lock();
+}
+
+sub pack_message {
+    my $message = shift;
+
+    $message =~ s/\n/\\n/g;
+
+    return $message;
+}
+
+sub unpack_message {
+    my $message = shift;
+
+    $message =~ s/\\n/\n/g;
+
+    return $message;
+}
+
+sub send_message {
+    print "Content-type:application/json\r\n\r\n";
+
+    my $message = pack_message($query{message});
+
+    print STDERR $message;
+   
+    my $line = hash() . "\t" . time() . "\t$message\t$query{call_sign}\t" . $node . "\n";
+
+    print STDERR $line;
+
+    get_messages_lock();
+
+    open(MSG, ">>" . $messages_db_file);
+    print MSG $line;
+    close(MSG);
+
+    release_messages_lock();
+
+    print '{"status":200, "response":"OK"}';
+}
+
+sub hash {
+    my $string = time() . int(rand(99999));
+
+    my $hash = `echo $string | md5sum`;
+
+    $hash =~ s/\s*\-//g;
+
+    chomp($hash);
+
+    $hash = substr($hash, 0, 8);
+
+    return $hash;
+}

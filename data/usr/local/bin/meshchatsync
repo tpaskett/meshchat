@@ -1,0 +1,106 @@
+#!/usr/bin/perl
+
+BEGIN {push @INC, '/www/cgi-bin'};
+use meshchatlib;
+
+$pid = fork;
+exit if $pid;
+
+while (1) {
+    my $node_list = node_list();
+
+    foreach my $node (@$node_list) {
+	#print $node;
+	unlink('/tmp/remote_messages');
+	`wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O /tmp/remote_messages > /dev/null 2>&1`;
+
+	if (-e '/tmp/remote_messages') {
+	    merge_messages();
+	}
+    }
+
+    sleep(10);
+}
+
+sub node_list {
+    my %hosts;
+
+    foreach(`cat /var/run/hosts_olsr 2>/dev/null`)
+    {
+	next unless /^\d/;
+	chomp;
+	($ip, $name, $junk, $originator, $mid, $midnum) = split /\s+/, $_;
+	next unless $originator;
+	next if $originator eq "myself";
+	if ( $name =~ /^dtdlink\..*$/ )
+	{
+	    $hosts{$ip}{name} = $name;
+	    next;
+	}
+	
+	if(defined $mid and $midnum =~ /^\#(\d+)/)
+	{
+	    if ( !exists $hosts{$ip}{name} )
+	    {
+		$hosts{$ip}{name} = $name;
+	    }
+	    $hosts{$ip}{hide} = 1;
+	    $hosts{$originator}{mid} = $1;
+	}
+	elsif($ip eq $originator)
+	{
+	    if($hosts{$ip}{name}) { $hosts{$ip}{tactical} = $name }
+	    else                  { $hosts{$ip}{name} = $name }
+	}
+	else
+	{
+	    push @{$hosts{$originator}{hosts}}, $name;
+	}
+    }
+
+    my $nodes = [];
+
+    foreach my $host (keys %hosts) {
+	if ($hosts{$host}{hide} != 1) {
+	    push(@$nodes, $hosts{$host}{name});
+	    #print "$hosts{$host}{name}\n";
+	}
+    }
+
+    return $nodes;
+}
+
+sub merge_messages {
+    my %rmsg;
+    my %lmsg;
+    my $num_rmsg = 0;
+
+    open(RMSG, '/tmp/remote_messages');
+    while (<RMSG>) {
+	my @parts = split("\t", $_);
+	$rmsg{$parts[0]} = $_;
+    }
+    close(RMSG);
+
+    get_messages_lock();
+
+    open(LMSG, $messages_db_file);
+    while (<LMSG>) {
+	my @parts = split("\t", $_);
+	$lmsg{$parts[0]} = 1;
+    }
+    close(LMSG);
+
+    open(LMSG, '>>' . $messages_db_file);
+    foreach my $rmsg_id (keys %rmsg) {
+	if (!exists $lmsg{$rmsg_id}) {
+	    #print "$rmsg_id is NOT in local db\n";
+	    print LMSG $rmsg{$rmsg_id};
+	} else {
+	    #print "$rmsg_id is IN in local db\n";
+	}
+    }
+    close(LMSG);
+
+    release_messages_lock();
+}

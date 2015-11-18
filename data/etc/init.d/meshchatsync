@@ -1,0 +1,10 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+start() {
+	service_start /usr/local/bin/meshchatsync
+}
+stop() {
+       service_stop /usr/local/bin/meshchatsync
+}

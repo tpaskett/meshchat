@@ -1,0 +1,14 @@
+#!/bin/bash
+
+rm data/www/meshchat/db/messages
+touch data/www/meshchat/db/messages
+chmod 666 data/www/meshchat/db/messages
+find . -name '*~' -delete
+
+cd data
+tar cfz ../data.tar.gz .
+cd ../control
+tar cfz ../control.tar.gz .
+cd ..
+tar cfz meshchat_0.1_all.ipk control.tar.gz data.tar.gz debian-binary
+

@@ -1,0 +1,27 @@
+#!/bin/sh
+if [ -d /www/meshchat/db ]
+then
+    if [ -f /www/meshchat/db/messages ]
+    then
+	/bin/chmod 666 /www/meshchat/db/messages
+    fi
+    if [ -f /www/meshchat/db/messages_lock ]
+    then
+	/bin/chmod 666 /www/meshchat/db/messages_lock
+    fi
+
+    /etc/init.d/meshchatsync enable
+    #/etc/init.d/meshchatsync start
+fi
+
+# Ubiquiti gear is currently using 'uhttpd' instead of the
+# webserver in busybox so we need to make a change.
+# uhttpd outputs the 200 Ok response on its own so no need
+# for the Perl script to print it.
+#if /usr/local/bin/get_model | grep -q Ubiquiti
+#then
+#   /bin/sed -i -e 's,HTTP/1.0 200 OK\\r\\n,,' /www/cgi-bin/hamchat.pl
+#fi
+
+echo "mesh chat has been installed."
+echo "Browse to http://localnode:8080/meshchat"
