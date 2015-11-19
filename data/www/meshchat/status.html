@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="skeleton.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+  </head>
+  <body class="has-docked-nav">
+    <div class="container">
+      <div class="navbar-spacer"></div>
+      <nav class="navbar">
+	<div class="container">
+          <ul class="navbar-list">
+            <li class="navbar-item"><a class="navbar-link" href="/meshchat/">Chat</a></li>
+	    <li class="navbar-item"><a class="navbar-link" href="/meshchat/status.html">Status</a></li>
+            <li class="navbar-item logout"><a class="navbar-link" href="#" id="logout">Logout</a></li>
+          </ul>
+	</div>
+      </nav>
+      <div class="row">
+	<div class="tweleve column">
+	  <table class="u-full-width">
+	    <thead>
+	      <tr>
+		<th>Node</th>
+		<th>Last Sync</th>
+	      </tr>
+	    </thead>
+	    <tbody id="sync-table">
+	    </tbody>
+	  </table>
+	</div>
+      </div>
+    </div>
+    <script src="zepto.min.js"></script>
+    <script src="fx.js"></script>
+    <script src="fx_methods.js"></script>
+    <script src="ohsnap.js"></script>
+    <script src="js.cookie.js"></script>
+    <script src="status.js"></script>
+    <script src="shared.js"></script>
+  </body>
+</html>

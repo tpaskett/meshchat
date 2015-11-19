@@ -1,7 +1,10 @@
 our $db_path = "/www/meshchat/db/";
-our $max_messages = 10;
+our $tmpfs_max_messages_db_size = 1024 * 1024; # 1m
+our $flash_max_messages_db_size = 50 * 1024; # 50k
 our $messages_lock_file = $db_path . 'messages_lock';
-our $messages_db_file = $db_path . 'messages';
+our $flash_messages_db_file = $db_path . 'messages';
+our $tmpfs_messages_db_file = '/tmp/messages';
+our $sync_status_file = '/tmp/sync_status';
 
 our $messages_lock_fh;
 

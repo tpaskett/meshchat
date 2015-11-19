@@ -6,8 +6,18 @@ use meshchatlib;
 $pid = fork;
 exit if $pid;
 
+my $new_messages = 0;
+my %sync_status = ();
+
+if (!-e $tmpfs_messages_db_file) {
+    `cp $flash_messages_db_file $tmpfs_messages_db_file`;
+}
+
 while (1) {
     my $node_list = node_list();
+
+    $new_messages = 0;
+    %sync_status = ();
 
     foreach my $node (@$node_list) {
 	#print $node;
@@ -15,11 +25,53 @@ while (1) {
 	`wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O /tmp/remote_messages > /dev/null 2>&1`;
 
 	if (-e '/tmp/remote_messages') {
-	    merge_messages();
+	    my $cur_size = `ls -l /tmp/remote_messages | awk '{print \$5}'`;
+	    chomp($cur_size);
+
+	    if ($cur_size > 0) {
+		$sync_status{$node} = time();
+		merge_messages();
+	    }
 	}
     }
 
+    log_status();
+
+    trim_db();
+
     sleep(10);
+}
+
+sub log_status {
+    my %cur_status;
+    my %lmsg;
+    my $num_rmsg = 0;
+
+    if (!-e $sync_status_file) { `touch $sync_status_file`; }
+
+    get_messages_lock();
+
+    open(STATUS, $sync_status_file);
+    while (<STATUS>) {
+	my $line = $_;
+	chomp($_);
+	my @parts = split("\t", $_);
+	$cur_status{$parts[0]} = $parts[1];
+    }
+    close(STATUS);
+
+    open(STATUS, '>' . $sync_status_file);
+    foreach my $key (keys %sync_status) {
+	print STATUS "$key\t$sync_status{$key}\n";
+    }
+    foreach my $key (keys %cur_status) {
+	if (!exists $sync_status{$key}) {
+	    print STATUS "$key\t$cur_status{$key}\n";
+	}
+    }
+    close(STATUS);
+
+    release_messages_lock();
 }
 
 sub node_list {
@@ -84,23 +136,102 @@ sub merge_messages {
 
     get_messages_lock();
 
-    open(LMSG, $messages_db_file);
+    open(LMSG, $tmpfs_messages_db_file);
     while (<LMSG>) {
 	my @parts = split("\t", $_);
 	$lmsg{$parts[0]} = 1;
     }
     close(LMSG);
 
-    open(LMSG, '>>' . $messages_db_file);
+    open(TMP, '>>' . $tmpfs_messages_db_file);
+    open(FLASH, '>>' . $flash_messages_db_file);
     foreach my $rmsg_id (keys %rmsg) {
 	if (!exists $lmsg{$rmsg_id}) {
 	    #print "$rmsg_id is NOT in local db\n";
-	    print LMSG $rmsg{$rmsg_id};
+	    print FLASH $rmsg{$rmsg_id};
+	    print TMP $rmsg{$rmsg_id};
+	    $new_messages = 1;
 	} else {
 	    #print "$rmsg_id is IN in local db\n";
 	}
     }
-    close(LMSG);
+    close(TMP);
+    close(FLASH);
 
+    release_messages_lock();
+}
+
+sub trim_db {
+    get_messages_lock();
+
+    my $trimmed_tmpfs = 0;
+
+    # Trim the file to the restricted size on tmpfs
+    my $cur_size = `ls -l $tmpfs_messages_db_file | awk '{print \$5}'`;
+    chomp($cur_size);
+
+    #print "Size: $cur_size $tmpfs_max_messages_db_size\n";
+
+    if ($cur_size > $tmpfs_max_messages_db_size) {
+	my $overage = $cur_size - $tmpfs_max_messages_db_size;
+	my $deleted_bytes = 0;
+
+	$trimmed_tmpfs = 1;
+
+	#print "Trimming tmpfs file: $cur_size\n";
+
+	open(NEW, '>/tmp/shrink_messages');
+	open(OLD, $tmpfs_messages_db_file);
+	
+	while(<OLD>) {
+	    my $line = $_;
+
+	    if ($deleted_bytes > $overage) {
+		print NEW $line;
+	    } else {
+		$deleted_bytes += length($line);
+	    }
+	}
+
+	#print "Removed $deleted_bytes\n";
+
+	close(OLD);
+	close(NEW);
+
+	unlink($tmpfs_messages_db_file);
+	`cp /tmp/shrink_messages $tmpfs_messages_db_file`;
+	unlink('/tmp/shrink_messages');
+    }
+
+    #if ($trimmed_fs == 0) { return; }
+
+    $cur_size = `ls -l $flash_messages_db_file | awk '{print \$5}'`;
+    chomp($cur_size);
+
+    # Copy the tmpfs file to flash within the size limit
+
+    my $skip_bytes = $cur_size - $flash_max_messages_db_size;
+    my $skipped_bytes = 0;
+
+    #print "Trimming flash file: $skip_bytes\n";
+    
+    open(TMP, $tmpfs_messages_db_file);
+    open(FLASH, '>' . $flash_messages_db_file);
+    
+    while(<TMP>) {
+	my $line = $_;
+	
+	if ($skipped_bytes > $skip_bytes) {
+	    print FLASH $line;
+	} else {
+	    $skipped_bytes += length($line);
+	}
+    }
+    
+    #print "Removed $skipped_bytes\n";
+    
+    close(TMP);
+    close(FLASH);
+    
     release_messages_lock();
 }

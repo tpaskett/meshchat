@@ -9,12 +9,18 @@ my %query;
 my $node = nvram_get("node");
 $node = "NOCALL" if $node eq "";
 
+if (!-e $tmpfs_messages_db_file) {
+    `cp $flash_messages_db_file $tmpfs_messages_db_file`;
+}
+
 parse_params();
 
 if ($query{action} eq 'messages') {
     messages();
 } elsif ($query{action} eq 'send_message') {
     send_message();
+} elsif ($query{action} eq 'sync_status') {
+    sync_status();
 } elsif ($query{action} eq 'messages_raw') {
     messages_raw();
 } else {
@@ -58,7 +64,7 @@ sub messages {
 
     get_messages_lock();
 
-    open(MSG, $messages_db_file);
+    open(MSG, $tmpfs_messages_db_file);
     while (<MSG>) {
 	my $line = $_;
 	chomp($line);
@@ -82,7 +88,9 @@ sub messages {
 	$json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '"},';
     }
 
-    chop($json);
+    if (length($json) > 1) {
+	chop($json);
+    }
 
     $json .= ']';
 
@@ -91,12 +99,49 @@ sub messages {
     #print encode_json(\@sorted);
 }
 
+sub sync_status {
+    print "Content-type:application/json\r\n\r\n";
+
+    my $status = [];
+       
+    get_messages_lock();
+
+    open(STATUS, $sync_status_file);
+    while (<STATUS>) {
+	my $line = $_;
+	chomp($line);
+
+	my @parts = split("\t", $line);
+
+	push(@$status, { epoch => $parts[1], node => $parts[0] });
+    }
+    close(STATUS);
+
+    release_messages_lock();
+
+    my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$status;
+    
+    my $json = '[';
+
+    foreach my $status (@sorted) {
+	$json .= '{"epoch":' . $status->{epoch} . ',"node":"' . $status->{node} . '"},';
+    }
+
+    if (length($json) > 1) {
+	chop($json);
+    }
+
+    $json .= ']';
+
+    print $json;
+}
+
 sub messages_raw {
     print "Content-type:text\r\n\r\n";
 
     get_messages_lock();
 
-    open(MSG, $messages_db_file);
+    open(MSG, $tmpfs_messages_db_file);
     while (<MSG>) {
 	my $line = $_;
 	print "$line";
@@ -110,6 +155,7 @@ sub pack_message {
     my $message = shift;
 
     $message =~ s/\n/\\n/g;
+    $message =~ s/\"/\\"/g;
 
     return $message;
 }
@@ -118,6 +164,7 @@ sub unpack_message {
     my $message = shift;
 
     $message =~ s/\\n/\n/g;
+    $message =~ s/\\"/\"/g;
 
     return $message;
 }
@@ -135,7 +182,11 @@ sub send_message {
 
     get_messages_lock();
 
-    open(MSG, ">>" . $messages_db_file);
+    open(MSG, ">>" . $tmpfs_messages_db_file);
+    print MSG $line;
+    close(MSG);
+
+    open(MSG, ">>" . $flash_messages_db_file);
     print MSG $line;
     close(MSG);
 
