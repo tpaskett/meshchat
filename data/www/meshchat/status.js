@@ -12,7 +12,7 @@ function load_status() {
 	    date.setUTCSeconds(data[i].epoch);
 
 	    html += '<tr>';
-	    html += '<td>' + data[i].node + '</td>';
+	    html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
 	    html += '<td>' + format_date(date) + '</td>';
 	    html += '</tr>';
 	}

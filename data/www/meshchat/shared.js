@@ -13,7 +13,7 @@ function format_date(date) {
     
     var year = String(date.getFullYear());
 
-    string = date.getMonth() + '/' + date.getDate() + '/' + year.slice(-2);
+    string = (date.getMonth()+1) + '/' + date.getDate() + '/' + year.slice(-2);
     string += '<br/>';
 
     var hours = date.getHours();
@@ -27,4 +27,15 @@ function format_date(date) {
     string += hours + ':' + minutes + ' ' + ampm;
 
     return string;
+}
+
+function make_id()
+{
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for( var i=0; i < 5; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
 }

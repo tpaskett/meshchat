@@ -5,6 +5,8 @@ our $messages_lock_file = $db_path . 'messages_lock';
 our $flash_messages_db_file = $db_path . 'messages';
 our $tmpfs_messages_db_file = '/tmp/messages';
 our $sync_status_file = '/tmp/sync_status';
+our $local_users_status_file = '/tmp/meshchat_users_local';
+our $remote_users_status_file = '/tmp/meshchat_users_remote';
 
 our $messages_lock_fh;
 

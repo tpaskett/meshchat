@@ -1,11 +1,12 @@
 <html>
   <head>
+    <title>Mesh Chat</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="skeleton.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
   </head>
   <body class="has-docked-nav">
-    <div class="container" id="call-sign-container">
+    <div class="container hidden" id="call-sign-container">
       <form>
 	<div class="row">
 	  <div class="four columns">&nbsp;</div>
@@ -18,7 +19,7 @@
 	<div class="row">
 	  <div class="four columns">&nbsp;</div>
 	  <div class="four columns">
-	    <input id="submit-call-sign" class="button-primary" type="submit" value="Send">
+	    <input id="submit-call-sign" class="button-primary" type="submit" value="Login">
 	  </div>
 	  <div class="four columns">&nbsp;</div>
 	</div>
@@ -35,23 +36,38 @@
           </ul>
 	</div>
       </nav>
-      <div>
-	<form>
-	  <label for="message">New Message</label>
-	  <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message"></textarea>
-	  <label class="last-updated">
-	    <span class="label-body" id="last-update">Last updated 3 secs ago</span>
-	  </label>
-	  <input id="submit-message" class="button-primary" type="submit" value="Send">
-	</form>
+      <div class="row">
+	<div class="six columns">
+	  <form>
+	    <label for="message">New Message</label>
+	    <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message"></textarea>
+	    <input id="submit-message" class="button-primary" type="submit" value="Send">
+	  </form>
+	</div>
+	<div class="six columns">
+	  <table class="u-full-width" id="remote-users">
+	    <thead>
+	      <tr>
+		<th>Call Sign</th>
+		<th>Node</th>
+		<th>Last Seen</th>
+	      </tr>
+	    </thead>
+	    <tbody id="users-table">
+	    </tbody>
+	  </table>
+	</div>
       </div>
       <div class="row">
-	<div class="tweleve column">
+	<div class="tweleve columns">
+	    <label class="last-updated">
+	      <span class="label-body" id="last-update">Last updated 3 secs ago</span>
+	    </label>
 	  <div id="ohsnap"></div>
 	</div>
       </div>
       <div class="row">
-	<div class="tweleve column">
+	<div class="tweleve columns">
 	  <table class="u-full-width">
 	    <thead>
 	      <tr>

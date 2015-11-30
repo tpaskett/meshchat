@@ -112,3 +112,13 @@ td:first-child {
 .logout {
     float: right;
 }
+
+#message {
+    min-height: 150px;
+    font-size: 1em;
+}
+
+video {
+  width: 100%    !important;
+  height: auto   !important;
+}

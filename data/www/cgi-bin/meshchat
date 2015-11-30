@@ -13,6 +13,10 @@ if (!-e $tmpfs_messages_db_file) {
     `cp $flash_messages_db_file $tmpfs_messages_db_file`;
 }
 
+if (! -e $users_status_file) {
+    `touch $users_status_file`;
+}
+
 parse_params();
 
 if ($query{action} eq 'messages') {
@@ -23,6 +27,10 @@ if ($query{action} eq 'messages') {
     sync_status();
 } elsif ($query{action} eq 'messages_raw') {
     messages_raw();
+} elsif ($query{action} eq 'users_raw') {
+    users_raw();
+} elsif ($query{action} eq 'users') {
+    users();
 } else {
     error('error no action');
 }
@@ -73,9 +81,44 @@ sub messages {
 
 	#print "$line\n";
 
-	push(@$messages, { epoch => $parts[1], message => unpack_message($parts[2]), call_sign => $parts[3], node => $parts[4] });
+	if ($parts[1] > 0) {
+	    push(@$messages, { epoch => $parts[1], message => unpack_message($parts[2]), call_sign => $parts[3], node => $parts[4] });
+	}
     }
     close(MSG);
+
+    my %users;
+
+    open(USERS, $local_users_status_file);
+    while (<USERS>) {
+	my $line = $_;
+        chomp($line);
+
+        my @parts = split("\t", $line);
+
+	if ($#parts > 2) { $users{$parts[0]} = $line; }
+    }
+    close(USERS);
+
+    my $found_user = 0;
+
+    my $ice_json = uri_unescape($query{ice_json});
+
+    open(USERS, '>' . $local_users_status_file);
+    foreach my $call_sign (keys %users) {
+	if ($call_sign eq $query{call_sign}) {
+	    print USERS "$query{call_sign}\t$ice_json\t$node\t" . time() . "\n";
+	    $found_user = 1;
+	} else {
+	    print USERS "$users{$call_sign}\n";
+	}
+    }
+
+    if ($found_user == 0) {
+	print USERS "$query{call_sign}\t$ice_json\t$node\t" . time() . "\n";
+    }
+
+    close(USERS);
 
     release_messages_lock();
 
@@ -151,6 +194,21 @@ sub messages_raw {
     release_messages_lock();
 }
 
+sub users_raw {
+    print "Content-type:text\r\n\r\n";
+
+    get_messages_lock();
+
+    open(USERS, $local_users_status_file);
+    while (<USERS>) {
+	my $line = $_;
+	print "$line";
+    }
+    close(USERS);
+
+    release_messages_lock();
+}
+
 sub pack_message {
     my $message = shift;
 
@@ -207,4 +265,79 @@ sub hash {
     $hash = substr($hash, 0, 8);
 
     return $hash;
+}
+
+sub users {
+    print "Content-type:application/json\r\n\r\n";
+
+    my $users = [];
+
+    get_messages_lock();
+
+    open(USERS, $local_users_status_file);
+    while (<USERS>) {
+	my $line = $_;
+	chomp($line);
+
+	my @parts = split("\t", $line);
+
+	#print "$line\n";
+
+	if ($parts[3] > 0) {
+	    push(@$users, { epoch => $parts[3], id => $parts[1], call_sign => $parts[0], node => $parts[2] });
+	}
+    }
+    close(USERS);
+
+    open(USERS, $remote_users_status_file);
+    while (<USERS>) {
+	my $line = $_;
+	chomp($line);
+
+	my @parts = split("\t", $line);
+
+	#print "$line\n";
+
+	if ($parts[3] > 0) {
+	    push(@$users, { epoch => $parts[3], id => $parts[1], call_sign => $parts[0], node => $parts[2] });
+	}
+    }
+    close(USERS);
+
+    release_messages_lock();
+
+    my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$users;
+    
+    my $json = '[';
+
+    foreach my $user (@sorted) {
+	$json .= '{"epoch":' . $user->{epoch} . ',"id":"' . $user->{id} . '","call_sign":"' . $user->{call_sign} . '","node":"' . $user->{node} . '"},';
+    }
+
+    if (length($json) > 1) {
+	chop($json);
+    }
+
+    $json .= ']';
+
+    print $json;
+
+    #print encode_json(\@sorted);
+}
+
+sub uri_unescape {
+    # Note from RFC1630:  "Sequences which start with a percent sign
+    # but are not followed by two hexadecimal characters are reserved
+    # for future extension"
+    my $str = shift;
+    if (@_ && wantarray) {
+        # not executed for the common case of a single argument
+        my @str = ($str, @_);  # need to copy
+        for (@str) {
+            s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+        }
+        return @str;
+    }
+    $str =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg if defined $str;
+    $str;
 }
