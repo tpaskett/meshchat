@@ -24,4 +24,14 @@ sub release_messages_lock {
     close($messages_lock_fh);
 }
 
+sub file_md5 {
+    my $file = shift;
+
+    my $output = `md5sum $file`;
+
+    my @parts = split(/\s/, $output);
+
+    return $parts[0];
+}
+
 1;

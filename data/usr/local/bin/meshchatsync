@@ -22,6 +22,7 @@ while (1) {
 
     if ($node eq 'NOCALL') {
 	$node_list = ['K7FPV', 'K7FPV-east'];
+	#$node_list = ['172.16.50.1'];
     } else {
 	$node_list = node_list();
     }
@@ -32,9 +33,17 @@ while (1) {
     foreach my $node (@$node_list) {
 	#print "$node\n";
 	unlink('/tmp/remote_messages');
-	`wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O /tmp/remote_messages > /dev/null 2>&1`;
-
+	my $output = `wget -S -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O /tmp/remote_messages 2>&1`;
+	#my $output = `wget -S -T 10 http://$node/cgi-bin/meshchat\\?action=messages_raw -O /tmp/remote_messages 2>&1`;
+	
 	if (-e '/tmp/remote_messages') {
+	    if ($output =~ /Content\-MD5\: (.*)\n/) {
+		my $file_md5 = file_md5('/tmp/remote_messages');
+		if ($file_md5 ne $1) {
+		    next;
+		}
+	    }
+
 	    my $cur_size = `ls -l /tmp/remote_messages | awk '{print \$5}'`;
 	    chomp($cur_size);
 	    
@@ -43,7 +52,14 @@ while (1) {
 		merge_messages();
 		
 		unlink('/tmp/remote_users');
-		`wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=users_raw -O /tmp/remote_users > /dev/null 2>&1`;
+		$output = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=users_raw -O /tmp/remote_users 2>&1`;
+		
+		if ($output =~ /Content\-MD5\: (.*)\n/) {
+		    my $file_md5 = file_md5('/tmp/remote_users');
+		    if ($file_md5 ne $1) {
+			next;
+		    }
+		}
 		
 		$cur_size = `ls -l /tmp/remote_users | awk '{print \$5}'`;
 		chomp($cur_size);

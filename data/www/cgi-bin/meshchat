@@ -27,6 +27,8 @@ if ($query{action} eq 'messages') {
     sync_status();
 } elsif ($query{action} eq 'messages_raw') {
     messages_raw();
+} elsif ($query{action} eq 'messages_download') {
+    messages_download();
 } elsif ($query{action} eq 'users_raw') {
     users_raw();
 } elsif ($query{action} eq 'users') {
@@ -102,12 +104,10 @@ sub messages {
 
     my $found_user = 0;
 
-    my $ice_json = uri_unescape($query{ice_json});
-
     open(USERS, '>' . $local_users_status_file);
     foreach my $call_sign (keys %users) {
 	if ($call_sign eq $query{call_sign}) {
-	    print USERS "$query{call_sign}\t$ice_json\t$node\t" . time() . "\n";
+	    print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
 	    $found_user = 1;
 	} else {
 	    print USERS "$users{$call_sign}\n";
@@ -115,7 +115,7 @@ sub messages {
     }
 
     if ($found_user == 0) {
-	print USERS "$query{call_sign}\t$ice_json\t$node\t" . time() . "\n";
+	print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
     }
 
     close(USERS);
@@ -180,9 +180,34 @@ sub sync_status {
 }
 
 sub messages_raw {
+    get_messages_lock();
+
+    my $md5 = file_md5($tmpfs_messages_db_file);
+
+    print "Content-MD5: $md5\r\n";
+
     print "Content-type:text\r\n\r\n";
 
+    open(MSG, $tmpfs_messages_db_file);
+    while (<MSG>) {
+	my $line = $_;
+	print "$line";
+    }
+    close(MSG);
+
+    release_messages_lock();
+}
+
+sub messages_download {
     get_messages_lock();
+
+    my $md5 = file_md5($tmpfs_messages_db_file);
+
+    print "Content-MD5: $md5\r\n";
+
+    print "Content-Disposition: attachment; filename=messages.txt;\r\n";
+
+    print "Content-type:text\r\n\r\n";
 
     open(MSG, $tmpfs_messages_db_file);
     while (<MSG>) {
@@ -195,9 +220,13 @@ sub messages_raw {
 }
 
 sub users_raw {
-    print "Content-type:text\r\n\r\n";
-
     get_messages_lock();
+
+    my $md5 = file_md5($local_users_status_file);
+
+    print "Content-MD5: $md5\r\n";
+
+    print "Content-type:text\r\n\r\n";
 
     open(USERS, $local_users_status_file);
     while (<USERS>) {
@@ -306,7 +335,8 @@ sub users {
 
     release_messages_lock();
 
-    my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$users;
+    #my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$users;
+    my @sorted = @$users;
     
     my $json = '[';
 

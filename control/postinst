@@ -11,7 +11,8 @@ then
     fi
 
     /etc/init.d/meshchatsync enable
-    #/etc/init.d/meshchatsync start
+    #killall meshchatsync
+    #/etc/init.d/meshchatsync start &
 fi
 
 # Ubiquiti gear is currently using 'uhttpd' instead of the
@@ -25,3 +26,5 @@ fi
 
 echo "mesh chat has been installed."
 echo "Browse to http://localnode:8080/meshchat"
+
+exit 0

@@ -1,11 +1,9 @@
 $(function() {
     $('#logout').on('click', function(e){
 	e.preventDefault();
-	Cookies.remove('meshchat');
+	Cookies.remove('meshchat_call_sign');
 	location.reload();
     });
-
-
 });
 
 function format_date(date) {

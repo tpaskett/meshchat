@@ -1,6 +1,7 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <title>Mesh Chat</title>
+    <title>Mesh Chat v0.1</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="skeleton.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
@@ -16,7 +17,7 @@
 	  </div>
 	  <div class="four columns">&nbsp;</div>
 	</div>
-	<div class="row">
+	<div class="row" id="login-row">
 	  <div class="four columns">&nbsp;</div>
 	  <div class="four columns">
 	    <input id="submit-call-sign" class="button-primary" type="submit" value="Login">
@@ -36,12 +37,22 @@
           </ul>
 	</div>
       </nav>
+      <div class="row hidden" id="video-container">
+	<div class="six columns">
+          <video id="local-video" muted="true" autoplay></video>
+	  <button id="hangup" class="button-primary">Hangup</button>
+	</div>
+	<div class="six columns">
+	  <video id="remote-video" muted="true" autoplay></video>
+	</div>
+      </div>
       <div class="row">
 	<div class="six columns">
 	  <form>
 	    <label for="message">New Message</label>
 	    <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message"></textarea>
 	    <input id="submit-message" class="button-primary" type="submit" value="Send">
+	    <button id="download-messages" class="button-primary">Download Messages</button>
 	  </form>
 	</div>
 	<div class="six columns">
@@ -69,9 +80,9 @@
       <div class="row">
 	<div class="tweleve columns">
 	  <table class="u-full-width">
-	    <thead>
+	    <thead id="message-header">
 	      <tr>
-		<th>Timestamp</th>
+		<th>Time</th>
 		<th>Message</th>
 		<th>Call Sign</th>
 		<th>Node</th>
@@ -88,6 +99,7 @@
     <script src="fx_methods.js"></script>
     <script src="ohsnap.js"></script>
     <script src="js.cookie.js"></script>
+    <script src="peer.min.js"></script>
     <script src="chat.js"></script>
     <script src="shared.js"></script>
   </body>
