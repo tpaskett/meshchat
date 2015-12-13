@@ -1,83 +1,140 @@
 #!/usr/bin/perl
 
-BEGIN {push @INC, '/www/cgi-bin'};
+BEGIN { push @INC, '/www/cgi-bin' }
 use perlfunc;
 use meshchatlib;
 
-$pid = fork;
-exit if $pid;
-
 my $new_messages = 0;
-my %sync_status = ();
+my %sync_status  = ();
+my %non_mesh_chat_nodes;
 
 my $node = nvram_get("node");
 $node = "NOCALL" if $node eq "";
 
-if (!-e $tmpfs_messages_db_file) {
-    `cp $flash_messages_db_file $tmpfs_messages_db_file`;
+if ( !-e $tmpfs_messages_db_file ) {
+    if ( -e $flash_messages_db_file ) {
+        `cp $flash_messages_db_file $tmpfs_messages_db_file`;
+    }
+}
+
+if ( !-d $meshchat_path ) {
+    mkdir($meshchat_path);
+    mkdir($local_files_dir);
+    `touch $lock_file`;
 }
 
 while (1) {
     my $node_list;
 
-    if ($node eq 'NOCALL') {
-	$node_list = ['K7FPV', 'K7FPV-east'];
-	#$node_list = ['172.16.50.1'];
-    } else {
-	$node_list = node_list();
+    if ( $node eq 'NOCALL' ) {
+        $node_list = [ 'K7FPV', 'K7FPV-east' ];
+
+        #$node_list = [ 'K7FPV', 'K7FPV-east' ];
+
+        #$node_list = ['172.16.50.1'];
+    }
+    else {
+        $node_list = node_list();
     }
 
     $new_messages = 0;
-    %sync_status = ();
+    %sync_status  = ();
+
+    my $version = get_messages_db_version();
 
     foreach my $node (@$node_list) {
-	#print "$node\n";
-	unlink('/tmp/remote_messages');
-	my $output = `wget -S -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O /tmp/remote_messages 2>&1`;
-	#my $output = `wget -S -T 10 http://$node/cgi-bin/meshchat\\?action=messages_raw -O /tmp/remote_messages 2>&1`;
-	
-	if (-e '/tmp/remote_messages') {
-	    if ($output =~ /Content\-MD5\: (.*)\n/) {
-		my $file_md5 = file_md5('/tmp/remote_messages');
-		if ($file_md5 ne $1) {
-		    next;
-		}
-	    }
 
-	    my $cur_size = `ls -l /tmp/remote_messages | awk '{print \$5}'`;
-	    chomp($cur_size);
-	    
-	    if ($cur_size > 0) {
-		$sync_status{$node} = time();
-		merge_messages();
-		
-		unlink('/tmp/remote_users');
-		$output = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=users_raw -O /tmp/remote_users 2>&1`;
-		
-		if ($output =~ /Content\-MD5\: (.*)\n/) {
-		    my $file_md5 = file_md5('/tmp/remote_users');
-		    if ($file_md5 ne $1) {
-			next;
-		    }
-		}
-		
-		$cur_size = `ls -l /tmp/remote_users | awk '{print \$5}'`;
-		chomp($cur_size);
-		
-		if ($cur_size > 0) {
-		    merge_users();
-		}
-	    }
-	}
+        #print "$node\n";
+
+        # Poll non mesh chat nodes at a longer interval
+        if ( exists $non_mesh_chat_nodes{$node} ) {
+            if ( time() < $non_mesh_chat_nodes{$node} ) { next; }
+        }
+
+        unlink( $meshchat_path . '/remote_messages' );
+
+        my $remote_version
+            = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_version -O - 2> /dev/null`;
+
+# Check the md5 of the remote db against ours. Only download the db if the remote has a different copy
+
+        if ( $version eq $remote_version ) { next; }
+
+        my $output
+            = `wget -S -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O $meshchat_path/remote_messages 2>&1`;
+
+        if ( $output =~ /404 Not Found/ ) {
+            $non_mesh_chat_nodes{$node}
+                = time() + $non_meshchat_poll_interval;
+        }
+
+        if ( -e $meshchat_path . '/remote_messages' ) {
+            if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+                my $file_md5
+                    = file_md5( $meshchat_path . '/remote_messages' );
+                if ( $file_md5 ne $1 ) {
+                    next;
+                }
+            }
+
+            my $cur_size = file_size( $meshchat_path . '/remote_messages' );
+
+            if ( $cur_size > 0 ) {
+                $sync_status{$node} = time();
+                merge_messages();
+
+                # Get remote users file
+                unlink( $meshchat_path . '/remote_users' );
+                $output
+                    = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=users_raw -O $meshchat_path/remote_users 2>&1`;
+
+                if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+                    my $file_md5
+                        = file_md5( $meshchat_path . '/remote_users' );
+                    if ( $file_md5 ne $1 ) {
+                        next;
+                    }
+                }
+
+                my $cur_size = file_size( $meshchat_path . '/remote_users' );
+
+                if ( $cur_size > 0 ) {
+                    merge_users();
+                }
+
+                # Get remote files file
+                unlink( $meshchat_path . '/remote_files' );
+                $output
+                    = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=local_files_raw -O $meshchat_path/remote_files 2>&1`;
+
+                if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+                    my $file_md5
+                        = file_md5( $meshchat_path . '/remote_files' );
+                    if ( $file_md5 ne $1 ) {
+                        next;
+                    }
+                }
+
+                my $cur_size = file_size( $meshchat_path . '/remote_files' );
+
+                if ( $cur_size > 0 ) {
+                    merge_files($node);
+                }
+            }
+        }
     }
 
     log_status();
 
     trim_db();
 
-    if ($node eq 'NOCALL') { die(); }
+    #if ( $node eq 'NOCALL' ) { die(); }
 
-    sleep(10);
+    unlink( $meshchat_path . '/remote_messages' );
+    unlink( $meshchat_path . '/remote_users' );
+    unlink( $meshchat_path . '/remote_files' );
+
+    sleep($poll_interval);
 }
 
 sub log_status {
@@ -85,76 +142,71 @@ sub log_status {
     my %lmsg;
     my $num_rmsg = 0;
 
-    if (!-e $sync_status_file) { `touch $sync_status_file`; }
+    if ( !-e $sync_status_file ) { `touch $sync_status_file`; }
 
-    get_messages_lock();
+    get_lock();
 
-    open(STATUS, $sync_status_file);
+    open( STATUS, $sync_status_file );
     while (<STATUS>) {
-	my $line = $_;
-	chomp($_);
-	my @parts = split("\t", $_);
-	$cur_status{$parts[0]} = $parts[1];
+        my $line = $_;
+        chomp($_);
+        my @parts = split( "\t", $_ );
+        $cur_status{ $parts[0] } = $parts[1];
     }
     close(STATUS);
 
-    open(STATUS, '>' . $sync_status_file);
-    foreach my $key (keys %sync_status) {
-	print STATUS "$key\t$sync_status{$key}\n";
+    open( STATUS, '>' . $sync_status_file );
+    foreach my $key ( keys %sync_status ) {
+        print STATUS "$key\t$sync_status{$key}\n";
     }
-    foreach my $key (keys %cur_status) {
-	if (!exists $sync_status{$key}) {
-	    print STATUS "$key\t$cur_status{$key}\n";
-	}
+    foreach my $key ( keys %cur_status ) {
+        if ( !exists $sync_status{$key} ) {
+            print STATUS "$key\t$cur_status{$key}\n";
+        }
     }
     close(STATUS);
 
-    release_messages_lock();
+    release_lock();
 }
 
 sub node_list {
     my %hosts;
 
-    foreach(`cat /var/run/hosts_olsr 2>/dev/null`)
-    {
-	next unless /^\d/;
-	chomp;
-	($ip, $name, $junk, $originator, $mid, $midnum) = split /\s+/, $_;
-	next unless $originator;
-	next if $originator eq "myself";
-	if ( $name =~ /^dtdlink\..*$/ )
-	{
-	    $hosts{$ip}{name} = $name;
-	    next;
-	}
-	
-	if(defined $mid and $midnum =~ /^\#(\d+)/)
-	{
-	    if ( !exists $hosts{$ip}{name} )
-	    {
-		$hosts{$ip}{name} = $name;
-	    }
-	    $hosts{$ip}{hide} = 1;
-	    $hosts{$originator}{mid} = $1;
-	}
-	elsif($ip eq $originator)
-	{
-	    if($hosts{$ip}{name}) { $hosts{$ip}{tactical} = $name }
-	    else                  { $hosts{$ip}{name} = $name }
-	}
-	else
-	{
-	    push @{$hosts{$originator}{hosts}}, $name;
-	}
+    foreach (`cat /var/run/hosts_olsr 2>/dev/null`) {
+        next unless /^\d/;
+        chomp;
+        ( $ip, $name, $junk, $originator, $mid, $midnum ) = split /\s+/, $_;
+        next unless $originator;
+        next if $originator eq "myself";
+        if ( $name =~ /^dtdlink\..*$/ ) {
+            $hosts{$ip}{name} = $name;
+            next;
+        }
+
+        if ( defined $mid and $midnum =~ /^\#(\d+)/ ) {
+            if ( !exists $hosts{$ip}{name} ) {
+                $hosts{$ip}{name} = $name;
+            }
+            $hosts{$ip}{hide}        = 1;
+            $hosts{$originator}{mid} = $1;
+        }
+        elsif ( $ip eq $originator ) {
+            if   ( $hosts{$ip}{name} ) { $hosts{$ip}{tactical} = $name }
+            else                       { $hosts{$ip}{name}     = $name }
+        }
+        else {
+            push @{ $hosts{$originator}{hosts} }, $name;
+        }
     }
 
     my $nodes = [];
 
-    foreach my $host (keys %hosts) {
-	if ($hosts{$host}{hide} != 1) {
-	    push(@$nodes, $hosts{$host}{name});
-	    #print "$hosts{$host}{name}\n";
-	}
+    foreach my $host ( keys %hosts ) {
+        if ( $hosts{$host}{hide} != 1 ) {
+            push( @$nodes, $hosts{$host}{name} );
+
+            #print "$hosts{$host}{name}\n";
+        }
     }
 
     return $nodes;
@@ -166,38 +218,46 @@ sub merge_messages {
     my %done;
     my $num_rmsg = 0;
 
-    open(RMSG, '/tmp/remote_messages');
+    open( RMSG, $meshchat_path . '/remote_messages' );
     while (<RMSG>) {
-	my @parts = split("\t", $_);
-	$rmsg{$parts[0]} = $_;
+        my @parts = split( "\t", $_ );
+        $rmsg{ $parts[0] } = $_;
     }
     close(RMSG);
 
-    get_messages_lock();
+    get_lock();
 
-    open(LMSG, $tmpfs_messages_db_file);
+    open( LMSG, $tmpfs_messages_db_file );
     while (<LMSG>) {
-	my @parts = split("\t", $_);
-	$lmsg{$parts[0]} = 1;
+        my @parts = split( "\t", $_ );
+        $lmsg{ $parts[0] } = 1;
     }
     close(LMSG);
 
-    open(TMP, '>>' . $tmpfs_messages_db_file);
-    open(FLASH, '>>' . $flash_messages_db_file);
-    foreach my $rmsg_id (keys %rmsg) {
-	if (!exists $lmsg{$rmsg_id}) {
-	    #print "$rmsg_id is NOT in local db\n";
-	    print FLASH $rmsg{$rmsg_id};
-	    print TMP $rmsg{$rmsg_id};
-	    $new_messages = 1;
-	} else {
-	    #print "$rmsg_id is IN in local db\n";
-	}
+    open( TMP, '>>' . $tmpfs_messages_db_file );
+    if ( $write_messages_to_flash == 1 ) {
+        open( FLASH, '>>' . $flash_messages_db_file );
+    }
+    foreach my $rmsg_id ( keys %rmsg ) {
+        if ( !exists $lmsg{$rmsg_id} ) {
+
+            #print "$rmsg_id is NOT in local db\n";
+            if ( $write_messages_to_flash == 1 ) {
+                print FLASH $rmsg{$rmsg_id};
+            }
+            print TMP $rmsg{$rmsg_id};
+            $new_messages = 1;
+        }
+        else {
+            #print "$rmsg_id is IN in local db\n";
+        }
     }
     close(TMP);
-    close(FLASH);
+    if ( $write_messages_to_flash == 1 ) { close(FLASH); }
 
-    release_messages_lock();
+    save_messages_db_version();
+
+    release_lock();
 }
 
 sub merge_users {
@@ -205,125 +265,171 @@ sub merge_users {
     my %lusers;
     my %done;
 
-    open(RUSERS, '/tmp/remote_users');
+    open( RUSERS, $meshchat_path . '/remote_users' );
     while (<RUSERS>) {
-	my @parts = split("\t", $_);
-	$key = $parts[0] . "\t" . $parts[1] . "\t" . $parts[2];
-	if ($_ !~ /error/ && $#parts > 2) { $rusers{$key} = $parts[3]; }
+        my @parts = split( "\t", $_ );
+        $key = $parts[0] . "\t" . $parts[1] . "\t" . $parts[2];
+        if ( $_ !~ /error/ && $#parts > 2 ) { $rusers{$key} = $parts[3]; }
     }
     close(RUSERS);
 
-    get_messages_lock();
+    get_lock();
 
-    open(LUSERS, $remote_users_status_file);
+    open( LUSERS, $remote_users_status_file );
     while (<LUSERS>) {
-	my @parts = split("\t", $_);
-	$key = $parts[0] . "\t" . $parts[1] . "\t" . $parts[2];
-	if ($_ !~ /error/ && $#parts > 2 ) { $lusers{$key} = $parts[3]; }
+        my @parts = split( "\t", $_ );
+        $key = $parts[0] . "\t" . $parts[1] . "\t" . $parts[2];
+        if ( $_ !~ /error/ && $#parts > 2 ) { $lusers{$key} = $parts[3]; }
     }
     close(LUSERS);
 
-    open(USERS, '>' . $remote_users_status_file);
+    open( USERS, '>' . $remote_users_status_file );
 
-    foreach my $key (keys %rusers) {
-	my @parts = split("\t", $key);
+    foreach my $key ( keys %rusers ) {
+        my @parts = split( "\t", $key );
 
-	#print "$key\n$#parts\n";
+        #print "$key\n$#parts\n";
 
-	if (exists ($lusers{$key})) {
-	    if ($lusers{$key} > $rusers{$key}) {
-		print USERS "$key\t$lusers{$key}";
-	    } else {
-		print USERS "$key\t$rusers{$key}";
-	    }
-	} else {
-	    if ($#parts > 1) { print USERS "$key\t$rusers{$key}"; }
-	}
+        if ( exists( $lusers{$key} ) ) {
+            if ( $lusers{$key} > $rusers{$key} ) {
+                print USERS "$key\t$lusers{$key}";
+            }
+            else {
+                print USERS "$key\t$rusers{$key}";
+            }
+        }
+        else {
+            if ( $#parts > 1 ) { print USERS "$key\t$rusers{$key}"; }
+        }
     }
 
-    foreach my $key (keys %lusers) {
-	my @parts = split("\t", $key);
-	if ($#parts > 1 && !exists $rusers{$key}) {
-	    print USERS "$key\t$lusers{$key}";
-	}
+    foreach my $key ( keys %lusers ) {
+        my @parts = split( "\t", $key );
+        if ( $#parts > 1 && !exists $rusers{$key} ) {
+            print USERS "$key\t$lusers{$key}";
+        }
     }
 
     close(USERS);
 
-    release_messages_lock();
+    release_lock();
+}
+
+sub merge_files {
+    my $remote_node = shift;
+    my %rfiles;
+    my %lfiles;
+    my %done;
+
+    open( RFILES, $meshchat_path . '/remote_files' );
+    while (<RFILES>) {
+        my @parts = split( "\t", $_ );
+        $key = $parts[0];
+        if ( $_ !~ /error/ && $#parts > 2 ) { $rfiles{$key} = $_; }
+    }
+    close(RFILES);
+
+    get_lock();
+
+    open( LFILES, $remote_files_file );
+    while (<LFILES>) {
+        my @parts = split( "\t", $_ );
+        $key = $parts[0];
+        if ( $_ !~ /error/ && $#parts > 2 ) { $lfiles{$key} = $_; }
+    }
+    close(LFILES);
+
+    open( FILES, '>' . $remote_files_file );
+
+    foreach my $file_node ( keys %rfiles ) {
+        print FILES $rfiles{$file_node};
+    }
+
+    foreach my $file_node ( keys %lusers ) {
+        if ( $file_node ne $remote_node ) {
+            print FILES $lfiles{$file_node};
+        }
+    }
+
+    close(FILES);
+
+    release_lock();
 }
 
 sub trim_db {
-    get_messages_lock();
+    get_lock();
 
     my $trimmed_tmpfs = 0;
 
     # Trim the file to the restricted size on tmpfs
-    my $cur_size = `ls -l $tmpfs_messages_db_file | awk '{print \$5}'`;
-    chomp($cur_size);
+    my $cur_size = file_size($tmpfs_messages_db_file);
 
     #print "Size: $cur_size $tmpfs_max_messages_db_size\n";
 
-    if ($cur_size > $tmpfs_max_messages_db_size) {
-	my $overage = $cur_size - $tmpfs_max_messages_db_size;
-	my $deleted_bytes = 0;
+    if ( $cur_size > $tmpfs_max_messages_db_size ) {
+        my $overage       = $cur_size - $tmpfs_max_messages_db_size;
+        my $deleted_bytes = 0;
 
-	$trimmed_tmpfs = 1;
+        $trimmed_tmpfs = 1;
 
-	#print "Trimming tmpfs file: $cur_size\n";
+        #print "Trimming tmpfs file: $cur_size\n";
 
-	open(NEW, '>/tmp/shrink_messages');
-	open(OLD, $tmpfs_messages_db_file);
-	
-	while(<OLD>) {
-	    my $line = $_;
+        open( NEW, '>$meshchat_path/shrink_messages' );
+        open( OLD, $tmpfs_messages_db_file );
 
-	    if ($deleted_bytes > $overage) {
-		print NEW $line;
-	    } else {
-		$deleted_bytes += length($line);
-	    }
-	}
+        while (<OLD>) {
+            my $line = $_;
 
-	#print "Removed $deleted_bytes\n";
+            if ( $deleted_bytes > $overage ) {
+                print NEW $line;
+            }
+            else {
+                $deleted_bytes += length($line);
+            }
+        }
 
-	close(OLD);
-	close(NEW);
+        #print "Removed $deleted_bytes\n";
 
-	unlink($tmpfs_messages_db_file);
-	`cp /tmp/shrink_messages $tmpfs_messages_db_file`;
-	unlink('/tmp/shrink_messages');
+        close(OLD);
+        close(NEW);
+
+        unlink($tmpfs_messages_db_file);
+        `cp $meshchat_path/shrink_messages $tmpfs_messages_db_file`;
+        unlink( $meshchat_path . '/shrink_messages' );
     }
 
     #if ($trimmed_fs == 0) { return; }
 
-    $cur_size = `ls -l $flash_messages_db_file | awk '{print \$5}'`;
-    chomp($cur_size);
+    my $cur_size = file_size($flash_messages_db_file);
 
-    # Copy the tmpfs file to flash within the size limit
+    if ( $write_messages_to_flash == 1 ) {
 
-    my $skip_bytes = $cur_size - $flash_max_messages_db_size;
-    my $skipped_bytes = 0;
+        # Copy the tmpfs file to flash within the size limit
 
-    #print "Trimming flash file: $skip_bytes\n";
-    
-    open(TMP, $tmpfs_messages_db_file);
-    open(FLASH, '>' . $flash_messages_db_file);
-    
-    while(<TMP>) {
-	my $line = $_;
-	
-	if ($skipped_bytes > $skip_bytes) {
-	    print FLASH $line;
-	} else {
-	    $skipped_bytes += length($line);
-	}
+        my $skip_bytes    = $cur_size - $flash_max_messages_db_size;
+        my $skipped_bytes = 0;
+
+        #print "Trimming flash file: $skip_bytes\n";
+
+        open( TMP,   $tmpfs_messages_db_file );
+        open( FLASH, '>' . $flash_messages_db_file );
+
+        while (<TMP>) {
+            my $line = $_;
+
+            if ( $skipped_bytes > $skip_bytes ) {
+                print FLASH $line;
+            }
+            else {
+                $skipped_bytes += length($line);
+            }
+        }
+
+        #print "Removed $skipped_bytes\n";
+
+        close(TMP);
+        close(FLASH);
     }
-    
-    #print "Removed $skipped_bytes\n";
-    
-    close(TMP);
-    close(FLASH);
-    
-    release_messages_lock();
+
+    release_lock();
 }

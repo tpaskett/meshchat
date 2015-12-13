@@ -20,14 +20,34 @@
             </nav>
             <div class="row">
                 <div class="tweleve columns">
+                    <form method="post" action="/cgi-bin/meshchat?action=upload_file" id="upload-form" enctype="multipart/form-data">
+                        <label for="file">Upload File</label>
+                        <input type="file" name="uploadfile" id="upload-file" value="">
+                        <input id="upload-button" class="button-primary" type="submit" value="Upload"><progress class="hidden"></progress>
+                    </form>
+
+                </div>
+            </div>
+            <div class="row">
+                <div id="ohsnap"></div>
+            </div>
+            <div class="row">
+                <div class="six columns" id="total-bytes"></div>
+                <div class="six columns" id="free-bytes"></div>
+            </div>
+            <div class="row">
+                <div class="tweleve columns">
                     <table class="u-full-width">
                         <thead>
                             <tr>
+                                <th>File</th>
+                                <th>Size</th>
                                 <th>Node</th>
-                                <th>Last Sync</th>
+                                <th>Timestamp</th>
+                                <th></th>
                             </tr>
                         </thead>
-                        <tbody id="sync-table">
+                        <tbody id="files-table">
                         </tbody>
                     </table>
                 </div>
@@ -38,7 +58,8 @@
         <script src="fx_methods.js"></script>
         <script src="ohsnap.js"></script>
         <script src="js.cookie.js"></script>
-        <script src="status.js"></script>
+        <script src="numeral.min.js"></script>
+        <script src="files.js"></script>
         <script src="shared.js"></script>
     </body>
 </html>

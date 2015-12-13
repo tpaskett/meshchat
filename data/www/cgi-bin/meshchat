@@ -1,62 +1,85 @@
 #!/usr/bin/perl
 
-BEGIN {push @INC, '/www/cgi-bin'};
+BEGIN { push @INC, '/www/cgi-bin' }
 use perlfunc;
 use meshchatlib;
+
+$| = 1;
 
 my %query;
 
 my $node = nvram_get("node");
 $node = "NOCALL" if $node eq "";
 
-if (!-e $tmpfs_messages_db_file) {
-    `cp $flash_messages_db_file $tmpfs_messages_db_file`;
-}
-
-if (! -e $users_status_file) {
-    `touch $users_status_file`;
-}
-
 parse_params();
 
-if ($query{action} eq 'messages') {
+if ( $query{action} eq 'messages' ) {
     messages();
-} elsif ($query{action} eq 'send_message') {
+}
+elsif ( $query{action} eq 'send_message' ) {
     send_message();
-} elsif ($query{action} eq 'sync_status') {
+}
+elsif ( $query{action} eq 'sync_status' ) {
     sync_status();
-} elsif ($query{action} eq 'messages_raw') {
+}
+elsif ( $query{action} eq 'messages_raw' ) {
     messages_raw();
-} elsif ($query{action} eq 'messages_download') {
+}
+elsif ( $query{action} eq 'messages_md5' ) {
+    messages_md5();
+}
+elsif ( $query{action} eq 'messages_download' ) {
     messages_download();
-} elsif ($query{action} eq 'users_raw') {
+}
+elsif ( $query{action} eq 'users_raw' ) {
     users_raw();
-} elsif ($query{action} eq 'users') {
+}
+elsif ( $query{action} eq 'users' ) {
     users();
-} else {
+}
+elsif ( $query{action} eq 'local_files_raw' ) {
+    local_files_raw();
+}
+elsif ( $query{action} eq 'file_download' ) {
+    file_download();
+}
+elsif ( $query{action} eq 'files' ) {
+    files();
+}
+elsif ( $query{action} eq 'delete_file' ) {
+    delete_file();
+}
+elsif ( $query{action} eq 'messages_version' ) {
+    messages_version();
+}
+elsif ( $query{action} eq 'upload_file' ) {
+    upload_file();
+}
+else {
     error('error no action');
 }
 
 sub parse_params {
     my $post_data;
 
-    if (length($ENV{'QUERY_STRING'}) > 0) {
-	$post_data = $ENV{'QUERY_STRING'};
-    } else {
-	foreach my $data (<STDIN>) {
-	    $post_data .= $data;
-	}
+    if ( length( $ENV{'QUERY_STRING'} ) > 0 ) {
+        $post_data = $ENV{'QUERY_STRING'};
+    }
+    else {
+        foreach my $data (<STDIN>) {
+            $post_data .= $data;
+        }
     }
 
-    if (length ($post_data) > 0){
-	$buffer = $post_data;
-	@pairs = split(/&/, $buffer);
-	foreach $pair (@pairs){
-	    ($name, $value) = split(/=/, $pair);
-	    $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
-	    $value =~ s/\+/ /g;
-	    $query{$name} = $value; 
-	}
+    if ( length($post_data) > 0 ) {
+        $buffer = $post_data;
+        @pairs = split( /&/, $buffer );
+        foreach $pair (@pairs) {
+            ( $name, $value ) = split( /=/, $pair );
+            $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+            $value =~ s/\+/ /g;
+            $query{$name} = $value;
+        }
     }
 }
 
@@ -72,67 +95,84 @@ sub messages {
 
     my $messages = [];
 
-    get_messages_lock();
+    get_lock();
 
-    open(MSG, $tmpfs_messages_db_file);
+    open( MSG, $tmpfs_messages_db_file );
     while (<MSG>) {
-	my $line = $_;
-	chomp($line);
+        my $line = $_;
+        chomp($line);
 
-	my @parts = split("\t", $line);
+        my @parts = split( "\t", $line );
 
-	#print "$line\n";
+        #print "$line\n";
 
-	if ($parts[1] > 0) {
-	    push(@$messages, { epoch => $parts[1], message => unpack_message($parts[2]), call_sign => $parts[3], node => $parts[4] });
-	}
+        if ( $parts[1] > 0 ) {
+            push(
+                @$messages,
+                {   epoch     => $parts[1],
+                    message   => unpack_message( $parts[2] ),
+                    call_sign => $parts[3],
+                    node      => $parts[4]
+                }
+            );
+        }
     }
     close(MSG);
 
     my %users;
 
-    open(USERS, $local_users_status_file);
+    open( USERS, $local_users_status_file );
     while (<USERS>) {
-	my $line = $_;
+        my $line = $_;
         chomp($line);
 
-        my @parts = split("\t", $line);
+        my @parts = split( "\t", $line );
 
-	if ($#parts > 2) { $users{$parts[0]} = $line; }
+        if ( $#parts > 2 ) { $users{ $parts[0] } = $line; }
     }
     close(USERS);
 
     my $found_user = 0;
 
-    open(USERS, '>' . $local_users_status_file);
-    foreach my $call_sign (keys %users) {
-	if ($call_sign eq $query{call_sign}) {
-	    print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
-	    $found_user = 1;
-	} else {
-	    print USERS "$users{$call_sign}\n";
-	}
+    open( USERS, '>' . $local_users_status_file );
+    foreach my $call_sign ( keys %users ) {
+        if ( $call_sign eq $query{call_sign} ) {
+            print USERS "$query{call_sign}\t$query{id}\t$node\t"
+                . time() . "\n";
+            $found_user = 1;
+        }
+        else {
+            print USERS "$users{$call_sign}\n";
+        }
     }
 
-    if ($found_user == 0) {
-	print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
+    if ( $found_user == 0 ) {
+        print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
     }
 
     close(USERS);
 
-    release_messages_lock();
+    release_lock();
 
     my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$messages;
-    
+
     my $json = '[';
 
     foreach my $message (@sorted) {
-	$message->{message} =~ s/\n/\\n/g;
-	$json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '"},';
+        $message->{message} =~ s/\n/\\n/g;
+        $json
+            .= '{"epoch":'
+            . $message->{epoch}
+            . ',"message":"'
+            . $message->{message}
+            . '","call_sign":"'
+            . $message->{call_sign}
+            . '","node":"'
+            . $message->{node} . '"},';
     }
 
-    if (length($json) > 1) {
-	chop($json);
+    if ( length($json) > 1 ) {
+        chop($json);
     }
 
     $json .= ']';
@@ -146,32 +186,36 @@ sub sync_status {
     print "Content-type:application/json\r\n\r\n";
 
     my $status = [];
-       
-    get_messages_lock();
 
-    open(STATUS, $sync_status_file);
+    get_lock();
+
+    open( STATUS, $sync_status_file );
     while (<STATUS>) {
-	my $line = $_;
-	chomp($line);
+        my $line = $_;
+        chomp($line);
 
-	my @parts = split("\t", $line);
+        my @parts = split( "\t", $line );
 
-	push(@$status, { epoch => $parts[1], node => $parts[0] });
+        push( @$status, { epoch => $parts[1], node => $parts[0] } );
     }
     close(STATUS);
 
-    release_messages_lock();
+    release_lock();
 
     my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$status;
-    
+
     my $json = '[';
 
     foreach my $status (@sorted) {
-	$json .= '{"epoch":' . $status->{epoch} . ',"node":"' . $status->{node} . '"},';
+        $json
+            .= '{"epoch":'
+            . $status->{epoch}
+            . ',"node":"'
+            . $status->{node} . '"},';
     }
 
-    if (length($json) > 1) {
-	chop($json);
+    if ( length($json) > 1 ) {
+        chop($json);
     }
 
     $json .= ']';
@@ -180,7 +224,7 @@ sub sync_status {
 }
 
 sub messages_raw {
-    get_messages_lock();
+    get_lock();
 
     my $md5 = file_md5($tmpfs_messages_db_file);
 
@@ -188,18 +232,30 @@ sub messages_raw {
 
     print "Content-type:text\r\n\r\n";
 
-    open(MSG, $tmpfs_messages_db_file);
+    open( MSG, $tmpfs_messages_db_file );
     while (<MSG>) {
-	my $line = $_;
-	print "$line";
+        my $line = $_;
+        print "$line";
     }
     close(MSG);
 
-    release_messages_lock();
+    release_lock();
+}
+
+sub messages_md5 {
+    get_lock();
+
+    my $md5 = file_md5($tmpfs_messages_db_file);
+
+    print "Content-type:text\r\n\r\n";
+
+    print $md5;
+
+    release_lock();
 }
 
 sub messages_download {
-    get_messages_lock();
+    get_lock();
 
     my $md5 = file_md5($tmpfs_messages_db_file);
 
@@ -209,18 +265,56 @@ sub messages_download {
 
     print "Content-type:text\r\n\r\n";
 
-    open(MSG, $tmpfs_messages_db_file);
+    open( MSG, $tmpfs_messages_db_file );
     while (<MSG>) {
-	my $line = $_;
-	print "$line";
+        my $line = $_;
+        print "$line";
     }
     close(MSG);
 
-    release_messages_lock();
+    release_lock();
+}
+
+sub file_download {
+    my $file = uri_unescape($query{file});
+
+    my $file_path = $local_files_dir . '/' . $file;
+
+    if ($file eq '' || !-e $file_path) {
+        error('no file');
+        return;
+    }
+
+    get_lock();    
+
+    my $md5 = file_md5($file_path);
+
+    print "Content-MD5: $md5\r\n";
+
+    print "Content-Disposition: attachment; filename=$file;\r\n";
+
+    print "Content-type:text\r\n\r\n";
+
+    open( FILE, $file_path );
+    binmode FILE;
+
+    while(1) {
+        my $bytes = read (FILE, $data, 1024 * 8);
+
+        print STDERR "$bytes\n";
+
+        print $data;
+
+        if ($bytes == 0) { last; }
+    }
+
+    close(FILE);
+
+    release_lock();
 }
 
 sub users_raw {
-    get_messages_lock();
+    get_lock();
 
     my $md5 = file_md5($local_users_status_file);
 
@@ -228,14 +322,58 @@ sub users_raw {
 
     print "Content-type:text\r\n\r\n";
 
-    open(USERS, $local_users_status_file);
+    open( USERS, $local_users_status_file );
     while (<USERS>) {
-	my $line = $_;
-	print "$line";
+        my $line = $_;
+        print "$line";
     }
     close(USERS);
 
-    release_messages_lock();
+    release_lock();
+}
+
+sub local_files_raw {
+    get_lock();
+
+    my $tmp_file = $meshchat_path . '/meshchat_files_local';
+
+    open( FILES, '>' . $tmp_file );
+
+    my @files;
+
+    opendir( my $dh, $local_files_dir );
+    my $file;
+
+    while ( $file = readdir($dh) ) {
+        if ( $file !~ /^\./ ) {
+            push( @files, $file );
+        }
+    }
+    closedir($dh);
+
+    foreach my $file (@files) {
+        my @stats = stat("$local_files_dir/$file");
+        print FILES "$file\t$node\t$stats[7]\t$stats[9]\n";
+    }
+
+    close(FILES);
+
+    my $md5 = file_md5($tmp_file);
+
+    print "Content-MD5: $md5\r\n";
+
+    print "Content-type:text\r\n\r\n";
+
+    open( FILES, $tmp_file );
+    while (<FILES>) {
+        my $line = $_;
+        print "$line";
+    }
+    close(FILES);
+
+    unlink($tmp_file);
+
+    release_lock();
 }
 
 sub pack_message {
@@ -259,31 +397,45 @@ sub unpack_message {
 sub send_message {
     print "Content-type:application/json\r\n\r\n";
 
-    my $message = pack_message($query{message});
+    my $message = pack_message( $query{message} );
 
     print STDERR $message;
-   
-    my $line = hash() . "\t" . time() . "\t$message\t$query{call_sign}\t" . $node . "\n";
+
+    my $line
+        = hash() . "\t"
+        . time()
+        . "\t$message\t$query{call_sign}\t"
+        . $node . "\n";
 
     print STDERR $line;
 
-    get_messages_lock();
+    get_lock();
 
-    open(MSG, ">>" . $tmpfs_messages_db_file);
+    open( MSG, ">>" . $tmpfs_messages_db_file );
     print MSG $line;
     close(MSG);
 
-    open(MSG, ">>" . $flash_messages_db_file);
+    open( MSG, ">>" . $flash_messages_db_file );
     print MSG $line;
     close(MSG);
 
-    release_messages_lock();
+    save_messages_db_version();
+
+    release_lock();
 
     print '{"status":200, "response":"OK"}';
 }
 
+sub messages_version {
+    my $ver = get_messages_db_version();
+
+    print "Content-type:text\r\n\r\n";
+
+    print $ver;
+}
+
 sub hash {
-    my $string = time() . int(rand(99999));
+    my $string = time() . int( rand(99999) );
 
     my $hash = `echo $string | md5sum`;
 
@@ -291,7 +443,7 @@ sub hash {
 
     chomp($hash);
 
-    $hash = substr($hash, 0, 8);
+    $hash = substr( $hash, 0, 8 );
 
     return $hash;
 }
@@ -301,51 +453,73 @@ sub users {
 
     my $users = [];
 
-    get_messages_lock();
+    get_lock();
 
-    open(USERS, $local_users_status_file);
+    open( USERS, $local_users_status_file );
     while (<USERS>) {
-	my $line = $_;
-	chomp($line);
+        my $line = $_;
+        chomp($line);
 
-	my @parts = split("\t", $line);
+        my @parts = split( "\t", $line );
 
-	#print "$line\n";
+        #print "$line\n";
 
-	if ($parts[3] > 0) {
-	    push(@$users, { epoch => $parts[3], id => $parts[1], call_sign => $parts[0], node => $parts[2] });
-	}
+        if ( $parts[3] > 0 ) {
+            push(
+                @$users,
+                {   epoch     => $parts[3],
+                    id        => $parts[1],
+                    call_sign => $parts[0],
+                    node      => $parts[2]
+                }
+            );
+        }
     }
     close(USERS);
 
-    open(USERS, $remote_users_status_file);
+    open( USERS, $remote_users_status_file );
     while (<USERS>) {
-	my $line = $_;
-	chomp($line);
+        my $line = $_;
+        chomp($line);
 
-	my @parts = split("\t", $line);
+        my @parts = split( "\t", $line );
 
-	#print "$line\n";
+        #print "$line\n";
 
-	if ($parts[3] > 0) {
-	    push(@$users, { epoch => $parts[3], id => $parts[1], call_sign => $parts[0], node => $parts[2] });
-	}
+        if ( $parts[3] > 0 ) {
+            push(
+                @$users,
+                {   epoch     => $parts[3],
+                    id        => $parts[1],
+                    call_sign => $parts[0],
+                    node      => $parts[2]
+                }
+            );
+        }
     }
     close(USERS);
 
-    release_messages_lock();
+    release_lock();
 
     #my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$users;
     my @sorted = @$users;
-    
+
     my $json = '[';
 
     foreach my $user (@sorted) {
-	$json .= '{"epoch":' . $user->{epoch} . ',"id":"' . $user->{id} . '","call_sign":"' . $user->{call_sign} . '","node":"' . $user->{node} . '"},';
+        $json
+            .= '{"epoch":'
+            . $user->{epoch}
+            . ',"id":"'
+            . $user->{id}
+            . '","call_sign":"'
+            . $user->{call_sign}
+            . '","node":"'
+            . $user->{node} . '"},';
     }
 
-    if (length($json) > 1) {
-	chop($json);
+    if ( length($json) > 1 ) {
+        chop($json);
     }
 
     $json .= ']';
@@ -355,14 +529,147 @@ sub users {
     #print encode_json(\@sorted);
 }
 
+sub files {
+    print "Content-type:application/json\r\n\r\n";
+
+    my $files = [];
+
+    get_lock();
+
+    opendir( my $dh, $local_files_dir );
+    my $file;
+
+    while ( $file = readdir($dh) ) {
+        if ( $file !~ /^\./ ) {
+            push(
+                @$files,
+                {   file  => $file,
+                    epoch => file_epoch($local_files_dir . '/' . $file),
+                    size  => file_size($local_files_dir . '/' . $file),
+                    node  => $node,
+                    local => 1
+                }
+            );
+        }
+    }
+    closedir($dh);
+
+    open( FILES, $remote_files_file );
+    while (<FILES>) {
+        my $line = $_;
+        chomp($line);
+
+        my @parts = split( "\t", $line );
+
+        #print "$line\n";
+
+        if ( $parts[3] > 0 ) {
+            push(
+                @$files,
+                {   file  => $parts[0],
+                    epoch => $parts[3],
+                    size  => $parts[2],
+                    node  => $parts[1],
+                    local => 0
+                }
+            );
+        }
+    }
+    close(FILES);
+
+    release_lock();
+
+    my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$files;
+
+    my $json_files = '[';
+
+    foreach my $file (@sorted) {
+        $json_files
+            .= '{"epoch":'
+            . $file->{epoch}
+            . ',"size":"'
+            . $file->{size}
+            . '","file":"'
+            . $file->{file}
+            . '","local":'
+            . $file->{local}
+            . ',"node":"'
+            . $file->{node} . '"},';
+    }
+
+    if ( length($json_files) > 1 ) {
+        chop($json_files);
+    }
+
+    $json_files .= ']';
+
+    my $stats = file_storage_stats();
+
+    my $json_stats = '{';
+
+    foreach my $key (keys %$stats) {
+        $json_stats .= '"' . $key . '":' . $$stats{$key} . ',';
+    }
+
+    if ( length($json_stats) > 1 ) {
+        chop($json_stats);
+    }
+
+    $json_stats .= '}';
+
+    my $json = '{"stats":' . $json_stats . ', "files":' . $json_files . '}';
+
+    print $json;
+
+    #print encode_json(\@sorted);
+}
+
+sub upload_file {
+    read_postdata();
+
+    my $new_file_size = file_size('/tmp/web/upload/file');
+
+    my $stats = file_storage_stats();
+
+    print STDERR "$new_file_size\n";
+    print STDERR "$$stats{allowed}\n";
+    print STDERR "$$stats{files_free}\n";
+
+    if ($new_file_size > $$stats{files_free}) {
+        unlink('/tmp/web/upload/file');
+
+        print "Content-type: application/json\r\n\r\n";
+
+        print '{"status":500, "response":"Not enough storage, delete some files"}';
+    } else {
+        `cp /tmp/web/upload/file '$local_files_dir/$parms{uploadfile}'`;
+
+        unlink('/tmp/web/upload/file');
+
+        print "Content-type: application/json\r\n\r\n";
+
+        print '{"status":200, "response":"OK"}';
+    }
+}
+
+sub delete_file {
+    unlink("$local_files_dir/$query{file}");
+
+    print "Content-type: application/json\r\n\r\n";
+
+    print '{"status":200, "response":"OK"}';
+}
+
 sub uri_unescape {
+
     # Note from RFC1630:  "Sequences which start with a percent sign
     # but are not followed by two hexadecimal characters are reserved
     # for future extension"
     my $str = shift;
-    if (@_ && wantarray) {
+    if ( @_ && wantarray ) {
+
         # not executed for the common case of a single argument
-        my @str = ($str, @_);  # need to copy
+        my @str = ( $str, @_ );    # need to copy
         for (@str) {
             s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
         }

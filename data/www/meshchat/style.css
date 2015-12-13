@@ -107,6 +107,10 @@ td:first-child {
     width: 80%; 
 }
 
+progress {
+  margin-left: 25px;
+}
+
 #message {
     min-height: 150px;
     font-size: 1em;

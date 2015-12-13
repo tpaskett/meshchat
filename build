@@ -10,5 +10,5 @@ tar cfz ../data.tar.gz .
 cd ../control
 tar cfz ../control.tar.gz .
 cd ..
-tar cfz meshchat_0.1_all.ipk control.tar.gz data.tar.gz debian-binary
+tar cfz meshchat_0.2_all.ipk control.tar.gz data.tar.gz debian-binary
 
