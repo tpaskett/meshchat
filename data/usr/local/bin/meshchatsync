@@ -3,6 +3,7 @@
 BEGIN { push @INC, '/www/cgi-bin' }
 use perlfunc;
 use meshchatlib;
+use meshchatconfig;
 
 my $new_messages = 0;
 my %sync_status  = ();
@@ -27,7 +28,7 @@ while (1) {
     my $node_list;
 
     if ( $node eq 'NOCALL' ) {
-        $node_list = [ 'K7FPV', 'K7FPV-east' ];
+        $node_list = [ 'K7FPV', 'K7FPV-east', 'KF7IIG-Bullet-001' ];
 
         #$node_list = [ 'K7FPV', 'K7FPV-east' ];
 
@@ -44,34 +45,71 @@ while (1) {
 
     foreach my $node (@$node_list) {
 
-        #print "$node\n";
+        print "$node\n";
 
         # Poll non mesh chat nodes at a longer interval
         if ( exists $non_mesh_chat_nodes{$node} ) {
             if ( time() < $non_mesh_chat_nodes{$node} ) { next; }
         }
 
+        # Get remote users file
+        unlink( $meshchat_path . '/remote_users' );
+        $output = `wget -S -T 10 http://$node:8080/cgi-bin/meshchat\\?action=users_raw -O $meshchat_path/remote_users 2>&1`;
+
+        print $output;
+
+        if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+            my $file_md5 = file_md5( $meshchat_path . '/remote_users' );
+            if ( $file_md5 eq $1 ) {
+                my $cur_size = file_size( $meshchat_path . '/remote_users' );
+
+                if ( $cur_size > 0 ) {
+                    print ",merge users\n";
+                    merge_users();
+                }
+            }
+        }
+
+        # Get remote files file
+        unlink( $meshchat_path . '/remote_files' );
+        $output = `wget -S -T 10 http://$node:8080/cgi-bin/meshchat\\?action=local_files_raw -O $meshchat_path/remote_files 2>&1`;
+
+        if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+            my $file_md5 = file_md5( $meshchat_path . '/remote_files' );
+            if ( $file_md5 eq $1 ) {
+                my $cur_size = file_size( $meshchat_path . '/remote_files' );
+
+                if ( $cur_size > 0 ) {
+                    merge_files($node);
+                }
+            }
+        }    
+
+        # Get remote messages
         unlink( $meshchat_path . '/remote_messages' );
 
-        my $remote_version
-            = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_version -O - 2> /dev/null`;
+        my $remote_version = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_version -O - 2> /dev/null`;
 
-# Check the md5 of the remote db against ours. Only download the db if the remote has a different copy
-
-        if ( $version eq $remote_version ) { next; }
-
-        my $output
-            = `wget -S -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O $meshchat_path/remote_messages 2>&1`;
-
-        if ( $output =~ /404 Not Found/ ) {
-            $non_mesh_chat_nodes{$node}
-                = time() + $non_meshchat_poll_interval;
+        # Check if meshchat is installed
+        if ( $remote_version =~ /404 Not Found/ ) {
+            $non_mesh_chat_nodes{$node} = time() + $non_meshchat_poll_interval;
+            next;
         }
+
+        # Check the version of the remote db against ours. Only download the db if the remote has a different copy
+
+        print "$version $remote_version\n";
+
+        if ( $version ne '' && $version eq $remote_version ) {
+            $sync_status{$node} = time();
+            next;
+        }
+
+        my $output = `wget -S -T 10 http://$node:8080/cgi-bin/meshchat\\?action=messages_raw -O $meshchat_path/remote_messages 2>&1`;
 
         if ( -e $meshchat_path . '/remote_messages' ) {
             if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
-                my $file_md5
-                    = file_md5( $meshchat_path . '/remote_messages' );
+                my $file_md5 = file_md5( $meshchat_path . '/remote_messages' );
                 if ( $file_md5 ne $1 ) {
                     next;
                 }
@@ -82,44 +120,6 @@ while (1) {
             if ( $cur_size > 0 ) {
                 $sync_status{$node} = time();
                 merge_messages();
-
-                # Get remote users file
-                unlink( $meshchat_path . '/remote_users' );
-                $output
-                    = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=users_raw -O $meshchat_path/remote_users 2>&1`;
-
-                if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
-                    my $file_md5
-                        = file_md5( $meshchat_path . '/remote_users' );
-                    if ( $file_md5 ne $1 ) {
-                        next;
-                    }
-                }
-
-                my $cur_size = file_size( $meshchat_path . '/remote_users' );
-
-                if ( $cur_size > 0 ) {
-                    merge_users();
-                }
-
-                # Get remote files file
-                unlink( $meshchat_path . '/remote_files' );
-                $output
-                    = `wget -T 10 http://$node:8080/cgi-bin/meshchat\\?action=local_files_raw -O $meshchat_path/remote_files 2>&1`;
-
-                if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
-                    my $file_md5
-                        = file_md5( $meshchat_path . '/remote_files' );
-                    if ( $file_md5 ne $1 ) {
-                        next;
-                    }
-                }
-
-                my $cur_size = file_size( $meshchat_path . '/remote_files' );
-
-                if ( $cur_size > 0 ) {
-                    merge_files($node);
-                }
             }
         }
     }
@@ -167,49 +167,6 @@ sub log_status {
     close(STATUS);
 
     release_lock();
-}
-
-sub node_list {
-    my %hosts;
-
-    foreach (`cat /var/run/hosts_olsr 2>/dev/null`) {
-        next unless /^\d/;
-        chomp;
-        ( $ip, $name, $junk, $originator, $mid, $midnum ) = split /\s+/, $_;
-        next unless $originator;
-        next if $originator eq "myself";
-        if ( $name =~ /^dtdlink\..*$/ ) {
-            $hosts{$ip}{name} = $name;
-            next;
-        }
-
-        if ( defined $mid and $midnum =~ /^\#(\d+)/ ) {
-            if ( !exists $hosts{$ip}{name} ) {
-                $hosts{$ip}{name} = $name;
-            }
-            $hosts{$ip}{hide}        = 1;
-            $hosts{$originator}{mid} = $1;
-        }
-        elsif ( $ip eq $originator ) {
-            if   ( $hosts{$ip}{name} ) { $hosts{$ip}{tactical} = $name }
-            else                       { $hosts{$ip}{name}     = $name }
-        }
-        else {
-            push @{ $hosts{$originator}{hosts} }, $name;
-        }
-    }
-
-    my $nodes = [];
-
-    foreach my $host ( keys %hosts ) {
-        if ( $hosts{$host}{hide} != 1 ) {
-            push( @$nodes, $hosts{$host}{name} );
-
-            #print "$hosts{$host}{name}\n";
-        }
-    }
-
-    return $nodes;
 }
 
 sub merge_messages {

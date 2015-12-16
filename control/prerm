@@ -3,10 +3,6 @@
 /etc/init.d/meshchatsync disable
 /etc/init.d/meshchatsync stop
 
-rm -rf /tmp/messages
-rm -rf /tmp/remote_messages
-rm -rf /tmp/sync_status
-rm -rf /tmp/meshchat_users_local
-rm -rf /tmp/meshchat_users_remote
+rm -rf /tmp/meshchat
 
 exit 0

@@ -3,6 +3,7 @@
 BEGIN { push @INC, '/www/cgi-bin' }
 use perlfunc;
 use meshchatlib;
+use meshchatconfig;
 
 $| = 1;
 
@@ -51,6 +52,12 @@ elsif ( $query{action} eq 'delete_file' ) {
 }
 elsif ( $query{action} eq 'messages_version' ) {
     messages_version();
+}
+elsif ( $query{action} eq 'hosts' ) {
+    hosts();
+}
+elsif ( $query{action} eq 'hosts_raw' ) {
+    hosts_raw();
 }
 elsif ( $query{action} eq 'upload_file' ) {
     upload_file();
@@ -109,7 +116,8 @@ sub messages {
         if ( $parts[1] > 0 ) {
             push(
                 @$messages,
-                {   epoch     => $parts[1],
+                {
+                    epoch     => $parts[1],
                     message   => unpack_message( $parts[2] ),
                     call_sign => $parts[3],
                     node      => $parts[4]
@@ -137,8 +145,7 @@ sub messages {
     open( USERS, '>' . $local_users_status_file );
     foreach my $call_sign ( keys %users ) {
         if ( $call_sign eq $query{call_sign} ) {
-            print USERS "$query{call_sign}\t$query{id}\t$node\t"
-                . time() . "\n";
+            print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
             $found_user = 1;
         }
         else {
@@ -160,15 +167,7 @@ sub messages {
 
     foreach my $message (@sorted) {
         $message->{message} =~ s/\n/\\n/g;
-        $json
-            .= '{"epoch":'
-            . $message->{epoch}
-            . ',"message":"'
-            . $message->{message}
-            . '","call_sign":"'
-            . $message->{call_sign}
-            . '","node":"'
-            . $message->{node} . '"},';
+        $json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '"},';
     }
 
     if ( length($json) > 1 ) {
@@ -207,11 +206,7 @@ sub sync_status {
     my $json = '[';
 
     foreach my $status (@sorted) {
-        $json
-            .= '{"epoch":'
-            . $status->{epoch}
-            . ',"node":"'
-            . $status->{node} . '"},';
+        $json .= '{"epoch":' . $status->{epoch} . ',"node":"' . $status->{node} . '"},';
     }
 
     if ( length($json) > 1 ) {
@@ -276,16 +271,16 @@ sub messages_download {
 }
 
 sub file_download {
-    my $file = uri_unescape($query{file});
+    my $file = uri_unescape( $query{file} );
 
     my $file_path = $local_files_dir . '/' . $file;
 
-    if ($file eq '' || !-e $file_path) {
+    if ( $file eq '' || !-e $file_path ) {
         error('no file');
         return;
     }
 
-    get_lock();    
+    get_lock();
 
     my $md5 = file_md5($file_path);
 
@@ -298,14 +293,14 @@ sub file_download {
     open( FILE, $file_path );
     binmode FILE;
 
-    while(1) {
-        my $bytes = read (FILE, $data, 1024 * 8);
+    while (1) {
+        my $bytes = read( FILE, $data, 1024 * 8 );
 
         print STDERR "$bytes\n";
 
         print $data;
 
-        if ($bytes == 0) { last; }
+        if ( $bytes == 0 ) { last; }
     }
 
     close(FILE);
@@ -401,11 +396,7 @@ sub send_message {
 
     print STDERR $message;
 
-    my $line
-        = hash() . "\t"
-        . time()
-        . "\t$message\t$query{call_sign}\t"
-        . $node . "\n";
+    my $line = hash() . "\t" . time() . "\t$message\t$query{call_sign}\t" . $node . "\n";
 
     print STDERR $line;
 
@@ -467,7 +458,8 @@ sub users {
         if ( $parts[3] > 0 ) {
             push(
                 @$users,
-                {   epoch     => $parts[3],
+                {
+                    epoch     => $parts[3],
                     id        => $parts[1],
                     call_sign => $parts[0],
                     node      => $parts[2]
@@ -489,7 +481,8 @@ sub users {
         if ( $parts[3] > 0 ) {
             push(
                 @$users,
-                {   epoch     => $parts[3],
+                {
+                    epoch     => $parts[3],
                     id        => $parts[1],
                     call_sign => $parts[0],
                     node      => $parts[2]
@@ -501,21 +494,14 @@ sub users {
 
     release_lock();
 
-    #my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$users;
-    my @sorted = @$users;
+    my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$users;
+
+    #my @sorted = @$users;
 
     my $json = '[';
 
     foreach my $user (@sorted) {
-        $json
-            .= '{"epoch":'
-            . $user->{epoch}
-            . ',"id":"'
-            . $user->{id}
-            . '","call_sign":"'
-            . $user->{call_sign}
-            . '","node":"'
-            . $user->{node} . '"},';
+        $json .= '{"epoch":' . $user->{epoch} . ',"id":"' . $user->{id} . '","call_sign":"' . $user->{call_sign} . '","node":"' . $user->{node} . '"},';
     }
 
     if ( length($json) > 1 ) {
@@ -543,9 +529,10 @@ sub files {
         if ( $file !~ /^\./ ) {
             push(
                 @$files,
-                {   file  => $file,
-                    epoch => file_epoch($local_files_dir . '/' . $file),
-                    size  => file_size($local_files_dir . '/' . $file),
+                {
+                    file  => $file,
+                    epoch => file_epoch( $local_files_dir . '/' . $file ),
+                    size  => file_size( $local_files_dir . '/' . $file ),
                     node  => $node,
                     local => 1
                 }
@@ -566,7 +553,8 @@ sub files {
         if ( $parts[3] > 0 ) {
             push(
                 @$files,
-                {   file  => $parts[0],
+                {
+                    file  => $parts[0],
                     epoch => $parts[3],
                     size  => $parts[2],
                     node  => $parts[1],
@@ -584,17 +572,7 @@ sub files {
     my $json_files = '[';
 
     foreach my $file (@sorted) {
-        $json_files
-            .= '{"epoch":'
-            . $file->{epoch}
-            . ',"size":"'
-            . $file->{size}
-            . '","file":"'
-            . $file->{file}
-            . '","local":'
-            . $file->{local}
-            . ',"node":"'
-            . $file->{node} . '"},';
+        $json_files .= '{"epoch":' . $file->{epoch} . ',"size":"' . $file->{size} . '","file":"' . $file->{file} . '","local":' . $file->{local} . ',"node":"' . $file->{node} . '"},';
     }
 
     if ( length($json_files) > 1 ) {
@@ -607,7 +585,7 @@ sub files {
 
     my $json_stats = '{';
 
-    foreach my $key (keys %$stats) {
+    foreach my $key ( keys %$stats ) {
         $json_stats .= '"' . $key . '":' . $$stats{$key} . ',';
     }
 
@@ -635,13 +613,14 @@ sub upload_file {
     print STDERR "$$stats{allowed}\n";
     print STDERR "$$stats{files_free}\n";
 
-    if ($new_file_size > $$stats{files_free}) {
+    if ( $new_file_size > $$stats{files_free} ) {
         unlink('/tmp/web/upload/file');
 
         print "Content-type: application/json\r\n\r\n";
 
         print '{"status":500, "response":"Not enough storage, delete some files"}';
-    } else {
+    }
+    else {
         `cp /tmp/web/upload/file '$local_files_dir/$parms{uploadfile}'`;
 
         unlink('/tmp/web/upload/file');
@@ -658,6 +637,130 @@ sub delete_file {
     print "Content-type: application/json\r\n\r\n";
 
     print '{"status":200, "response":"OK"}';
+}
+
+sub hosts_raw {
+    my $hosts = [];
+
+    print "Content-type: application/json\r\n\r\n";
+
+    open( DHCP, "/var/dhcp.leases" );
+    while (<DHCP>) {
+        my ( $epoch, $mac1, $ip, $hostname, $mac2 ) = split( /\s/, $_ );
+        push(
+            @$hosts,
+            {
+                ip       => $ip,
+                hostname => $hostname
+            }
+        );
+    }
+    close(DHCP);
+
+    open( DHCP, '/etc/config.mesh/_setup.dhcp.dmz' );
+    while (<DHCP>) {
+        my ( $mac, $num, $hostname ) = split( /\s/, $_ );
+        my $addr = ( gethostbyname($hostname) )[4];
+        my ( $a, $b, $c, $d ) = unpack( 'C4', $addr );
+        my $ip = "$a.$b.$c.$d";
+        push(
+            @$hosts,
+            {
+                ip       => $ip,
+                hostname => $hostname
+            }
+        );
+    }
+    close(DHCP);
+
+    foreach my $host (@$hosts) {
+        print "$host->{ip}\t$host->{hostname}\n";
+    }
+}
+
+sub hosts {
+    my $hosts = [];
+
+    print "Content-type: application/json\r\n\r\n";
+
+    open( DHCP, "/var/dhcp.leases" );
+    while (<DHCP>) {
+        my ( $epoch, $mac1, $ip, $hostname, $mac2 ) = split( /\s/, $_ );
+        push(
+            @$hosts,
+            {
+                ip       => $ip,
+                hostname => $hostname,
+                node     => $node
+            }
+        );
+    }
+    close(DHCP);
+
+    open( DHCP, '/etc/config.mesh/_setup.dhcp.dmz' );
+    while (<DHCP>) {
+        my ( $mac, $num, $hostname ) = split( /\s/, $_ );
+        my $addr = ( gethostbyname($hostname) )[4];
+        my ( $a, $b, $c, $d ) = unpack( 'C4', $addr );
+        my $ip = "$a.$b.$c.$d";
+        push(
+            @$hosts,
+            {
+                ip       => $ip,
+                hostname => $hostname,
+                node     => $node
+            }
+        );
+    }
+    close(DHCP);
+
+    my $node_list = node_list();
+
+    foreach my $remote_node (@$node_list) {
+        my @lines = `wget -T 3 http://$remote_node:8080/cgi-bin/meshchat\\?action=hosts_raw -O - 2> /dev/null`;
+
+        foreach my $lines (@lines) {
+            if ($line =~ /error/ || $line eq '') { next; }
+            my ( $ip, $hostname ) = split( "\t", $line );
+            push(
+                @$hosts,
+                {
+                    ip       => $ip,
+                    hostname => $hostname,
+                    node     => $remote_node
+                }
+            );
+        }
+    }
+
+    my @sorted = sort { $a->{hostname} <=> $b->{hostname} } @$hosts;
+
+    my $json = '[';
+
+    foreach my $host (@sorted) {
+        $json .= '{"ip":' . $host->{ip} . ',"hostname":"' . $host->{hostname} . '","node":"' . $host->{node} . '"},';
+    }
+
+    if ( length($json) > 1 ) {
+        chop($json);
+    }
+
+    $json .= ']';
+
+    print $json;
+}
+
+sub to_dotquad {
+
+    # Given a binary int IP, returns dotted-quad (Reverse of ip2num)
+    my $bin    = shift;
+    my $result = '';      # Empty string
+
+    for ( 24, 16, 8, 0 ) {
+        $result .= ( $bin >> $_ & 255 ) . '.';
+    }
+    chop $result;         # Delete extra trailing dot
+    return $result;
 }
 
 sub uri_unescape {

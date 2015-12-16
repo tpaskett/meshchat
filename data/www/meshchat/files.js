@@ -52,13 +52,16 @@ $(function() {
 	    	    } else {
 					ohSnap(data.response, 'red');
 	    	    }
+
+	    	    $('#upload-file').val('');
+	    	    
     	    	load_files();
           	},
           	error: function(data, textStatus, errorThrown)
             {
             	ohSnap('File upload error');
             },
-            complete: function(jqXHR, textStatus) {
+            complete: function(jqXHR, textStatus) {            	
             	$('progress').addClass('hidden');
             }
 	    });		
