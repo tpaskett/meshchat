@@ -1,0 +1,14 @@
+#!/bin/sh
+
+a2enmod cgi > /dev/null 2>&1
+service apache2 restart > /dev/null 2>&1
+
+update-rc.d meshchatsync defaults 99
+
+mkdir /var/www/html/meshchat/files
+
+chown -R www-data:www-data /var/www/html/meshchat
+
+/etc/init.d/meshchatsync start
+
+exit 0

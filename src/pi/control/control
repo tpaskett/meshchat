@@ -1,0 +1,10 @@
+Package: meshchat
+Version: 0.2
+Depends: wget, apache2
+Provides: 
+Source: package/meshchat
+Section: net
+Priority: optional
+Maintainer: Trevor Paskett (K7FPV)
+Architecture: all
+Description: P2P distributed chat for mesh networks

@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 
-BEGIN { push @INC, '/www/cgi-bin' }
-use perlfunc;
+BEGIN { push @INC, '/www/cgi-bin', '/usr/lib/cgi-bin' }
 use meshchatlib;
 use meshchatconfig;
 
@@ -9,8 +8,7 @@ $| = 1;
 
 my %query;
 
-my $node = nvram_get("node");
-$node = "NOCALL" if $node eq "";
+my $node = node_name();
 
 parse_params();
 
@@ -104,7 +102,7 @@ sub messages {
 
     get_lock();
 
-    open( MSG, $tmpfs_messages_db_file );
+    open( MSG, $messages_db_file );
     while (<MSG>) {
         my $line = $_;
         chomp($line);
@@ -120,7 +118,8 @@ sub messages {
                     epoch     => $parts[1],
                     message   => unpack_message( $parts[2] ),
                     call_sign => $parts[3],
-                    node      => $parts[4]
+                    node      => $parts[4],
+                    platform => $parts[5]
                 }
             );
         }
@@ -142,10 +141,14 @@ sub messages {
 
     my $found_user = 0;
 
+    my $epoch = time();
+
+    if ($query{epoch} > $epoch) { $epoch = $query{epoch}; }
+
     open( USERS, '>' . $local_users_status_file );
     foreach my $call_sign ( keys %users ) {
         if ( $call_sign eq $query{call_sign} ) {
-            print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
+            print USERS "$query{call_sign}\t$query{id}\t$node\t$epoch\t$platform\n";
             $found_user = 1;
         }
         else {
@@ -154,7 +157,7 @@ sub messages {
     }
 
     if ( $found_user == 0 ) {
-        print USERS "$query{call_sign}\t$query{id}\t$node\t" . time() . "\n";
+        print USERS "$query{call_sign}\t$query{id}\t$node\t$epoch\t$platform\n";
     }
 
     close(USERS);
@@ -167,7 +170,7 @@ sub messages {
 
     foreach my $message (@sorted) {
         $message->{message} =~ s/\n/\\n/g;
-        $json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '"},';
+        $json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '"},';
     }
 
     if ( length($json) > 1 ) {
@@ -221,13 +224,13 @@ sub sync_status {
 sub messages_raw {
     get_lock();
 
-    my $md5 = file_md5($tmpfs_messages_db_file);
+    my $md5 = file_md5($messages_db_file);
 
     print "Content-MD5: $md5\r\n";
 
     print "Content-type:text\r\n\r\n";
 
-    open( MSG, $tmpfs_messages_db_file );
+    open( MSG, $messages_db_file );
     while (<MSG>) {
         my $line = $_;
         print "$line";
@@ -240,7 +243,7 @@ sub messages_raw {
 sub messages_md5 {
     get_lock();
 
-    my $md5 = file_md5($tmpfs_messages_db_file);
+    my $md5 = file_md5($messages_db_file);
 
     print "Content-type:text\r\n\r\n";
 
@@ -252,7 +255,7 @@ sub messages_md5 {
 sub messages_download {
     get_lock();
 
-    my $md5 = file_md5($tmpfs_messages_db_file);
+    my $md5 = file_md5($messages_db_file);
 
     print "Content-MD5: $md5\r\n";
 
@@ -260,7 +263,7 @@ sub messages_download {
 
     print "Content-type:text\r\n\r\n";
 
-    open( MSG, $tmpfs_messages_db_file );
+    open( MSG, $messages_db_file );
     while (<MSG>) {
         my $line = $_;
         print "$line";
@@ -324,6 +327,27 @@ sub users_raw {
     }
     close(USERS);
 
+    if ($query{platform} eq 'pi') {
+        # If a pi queried us, we need to save it to query it
+        # It is not in the node list from olsr
+
+        my $found = 0;
+
+        open(PI, $pi_nodes_file);
+        while (<PI>) {
+            my $pi_node = $_;
+            chomp($pi_node);
+            if ($pi_node eq $query{node}) { $found = 1; }
+        }
+        close(PI);
+
+        if ($found == 0) {
+            open (PI, ">>$pi_nodes_file");
+            print PI "$query{node}\n";
+            close(PI);
+        }
+    }
+
     release_lock();
 }
 
@@ -348,7 +372,7 @@ sub local_files_raw {
 
     foreach my $file (@files) {
         my @stats = stat("$local_files_dir/$file");
-        print FILES "$file\t$node\t$stats[7]\t$stats[9]\n";
+        print FILES "$file\t$node\t$stats[7]\t$stats[9]\t$platform\n";
     }
 
     close(FILES);
@@ -396,19 +420,19 @@ sub send_message {
 
     print STDERR $message;
 
-    my $line = hash() . "\t" . time() . "\t$message\t$query{call_sign}\t" . $node . "\n";
+    my $epoch = time();
+
+    if ($query{epoch} > $epoch) { $epoch = $query{epoch}; }
+
+    my $line = hash() . "\t$epoch\t$message\t$query{call_sign}\t" . $node . "\t$platform\n";
 
     print STDERR $line;
 
     get_lock();
 
-    open( MSG, ">>" . $tmpfs_messages_db_file );
+    open( MSG, ">>" . $messages_db_file );
     print MSG $line;
-    close(MSG);
-
-    open( MSG, ">>" . $flash_messages_db_file );
-    print MSG $line;
-    close(MSG);
+    close(MSG);    
 
     save_messages_db_version();
 
@@ -462,7 +486,8 @@ sub users {
                     epoch     => $parts[3],
                     id        => $parts[1],
                     call_sign => $parts[0],
-                    node      => $parts[2]
+                    node      => $parts[2],
+                    platform  => $parts[4]
                 }
             );
         }
@@ -485,7 +510,8 @@ sub users {
                     epoch     => $parts[3],
                     id        => $parts[1],
                     call_sign => $parts[0],
-                    node      => $parts[2]
+                    node      => $parts[2],
+                    platform  => $parts[4]
                 }
             );
         }
@@ -501,7 +527,7 @@ sub users {
     my $json = '[';
 
     foreach my $user (@sorted) {
-        $json .= '{"epoch":' . $user->{epoch} . ',"id":"' . $user->{id} . '","call_sign":"' . $user->{call_sign} . '","node":"' . $user->{node} . '"},';
+        $json .= '{"epoch":' . $user->{epoch} . ',"id":"' . $user->{id} . '","call_sign":"' . $user->{call_sign} . '","node":"' . $user->{node} . '","platform":"' . $user->{platform} . '"},';
     }
 
     if ( length($json) > 1 ) {
@@ -534,7 +560,8 @@ sub files {
                     epoch => file_epoch( $local_files_dir . '/' . $file ),
                     size  => file_size( $local_files_dir . '/' . $file ),
                     node  => $node,
-                    local => 1
+                    local => 1,
+                    platform => 'node'
                 }
             );
         }
@@ -558,7 +585,8 @@ sub files {
                     epoch => $parts[3],
                     size  => $parts[2],
                     node  => $parts[1],
-                    local => 0
+                    local => 0,
+                    platform => $parts[4]
                 }
             );
         }
@@ -572,7 +600,7 @@ sub files {
     my $json_files = '[';
 
     foreach my $file (@sorted) {
-        $json_files .= '{"epoch":' . $file->{epoch} . ',"size":"' . $file->{size} . '","file":"' . $file->{file} . '","local":' . $file->{local} . ',"node":"' . $file->{node} . '"},';
+        $json_files .= '{"epoch":' . $file->{epoch} . ',"size":"' . $file->{size} . '","file":"' . $file->{file} . '","local":' . $file->{local} . ',"node":"' . $file->{node} . '","platform":"' . $file->{platform} . '"},';
     }
 
     if ( length($json_files) > 1 ) {
@@ -763,21 +791,3 @@ sub to_dotquad {
     return $result;
 }
 
-sub uri_unescape {
-
-    # Note from RFC1630:  "Sequences which start with a percent sign
-    # but are not followed by two hexadecimal characters are reserved
-    # for future extension"
-    my $str = shift;
-    if ( @_ && wantarray ) {
-
-        # not executed for the common case of a single argument
-        my @str = ( $str, @_ );    # need to copy
-        for (@str) {
-            s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
-        }
-        return @str;
-    }
-    $str =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg if defined $str;
-    $str;
-}

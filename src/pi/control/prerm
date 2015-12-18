@@ -1,0 +1,10 @@
+#!/bin/sh
+
+/etc/init.d/meshchatsync stop
+
+update-rc.d -f meshchatsync remove
+
+rm -rf /tmp/meshchat
+rm -rf /var/www/html/meshchat/files
+
+exit 0

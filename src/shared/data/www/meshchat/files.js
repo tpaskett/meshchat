@@ -4,7 +4,7 @@ $(function() {
     load_files();
     setInterval(function() {
         load_files()
-    }, 10000);
+    }, 30000);
     var file = null;
     $('#upload-file').on("change", function(event) {
         file = event.target.files[0];
@@ -71,20 +71,24 @@ $(function() {
 function upload_progress(event) {
 	if (event.lengthComputable){
         $('progress').attr({ value: event.loaded, max: event.total});
-        console.log(event.loaded);
-        console.log(event.total);
     }
 }
 
 function load_files() {
     $.getJSON('/cgi-bin/meshchat?action=files', function(data) {
-   		console.log(data);
         var html = '';
         for (var i = 0; i < data.files.length; i++) {
             var date = new Date(0);
             date.setUTCSeconds(data.files[i].epoch);
             html += '<tr>';
-            html += '<td><a href="http://' + data.files[i].node + ':8080/cgi-bin/meshchat?action=file_download&file=' + encodeURIComponent(data.files[i].file) + '">' + data.files[i].file + '</a></td>';
+
+            var port = '';
+
+            if (data.files[i].platform == 'node') {
+                port = ':8080'
+            }
+
+            html += '<td><a href="http://' + data.files[i].node + port + '/cgi-bin/meshchat?action=file_download&file=' + encodeURIComponent(data.files[i].file) + '">' + data.files[i].file + '</a></td>';
             html += '<td>' + numeral(data.files[i].size).format('0.0 b') + '</td>';
             html += '<td>' + data.files[i].node + '</td>';
             html += '<td>' + format_date(date) + '</td>';

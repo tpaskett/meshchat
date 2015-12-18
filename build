@@ -1,14 +1,43 @@
 #!/bin/bash
 
-rm data/www/meshchat/db/messages
-touch data/www/meshchat/db/messages
-chmod 666 data/www/meshchat/db/messages
+rm -rf data.tar.gz control.tar.gz *.ipk *.deb
 find . -name '*~' -delete
+rm src/shared/data/www/meshchat/db/messages
+touch src/shared/data/www/meshchat/db/messages
+chmod 666 src/shared/data/www/meshchat/db/messages
 
-cd data
-tar cfz ../data.tar.gz .
+### Build AREDN package
+
+cd src/shared/data
+tar cf ../../../data.tar `find . -type f`
+cd ../../node/data
+tar rf ../../../data.tar `find . -type f`
 cd ../control
-tar cfz ../control.tar.gz .
-cd ..
+tar cfz ../../../control.tar.gz .
+cd ../../..
+gzip data.tar
 tar cfz meshchat_0.2_all.ipk control.tar.gz data.tar.gz debian-binary
 
+### Build pi package
+rm -rf data.tar.gz control.tar.gz
+
+mkdir -p tmp/var/www/html
+mkdir -p tmp/usr/lib/cgi-bin
+
+cd src/shared/data
+cp -R www/meshchat ../../../tmp/var/www/html/	
+cp -R usr ../../../tmp/
+cp www/cgi-bin/* ../../../tmp/usr/lib/cgi-bin/
+
+cd ../../pi/data	
+cp -R etc ../../../tmp/
+cp www/cgi-bin/* ../../../tmp/usr/lib/cgi-bin/
+
+cd ../../../tmp
+tar cfz ../data.tar.gz `find . -type f`
+
+cd ../src/pi/control
+tar cfz ../../../control.tar.gz .
+cd ../../..
+ar r meshchat_0.2_all.deb debian-binary control.tar.gz data.tar.gz
+rm -rf tmp

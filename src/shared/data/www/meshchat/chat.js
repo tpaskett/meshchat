@@ -50,7 +50,8 @@ function meshchat_init() {
         $.post('/cgi-bin/meshchat', {
             action: 'send_message',
             message: $('#message').val(),
-            call_sign: call_sign
+            call_sign: call_sign,
+            epoch: epoch()
         }, function(response) {
             //$(this).prop("disabled", false);
             $('#message').val('');
@@ -90,8 +91,9 @@ function meshchat_init() {
 }
 
 function load_messages() {
-    $.getJSON('/cgi-bin/meshchat?action=messages&call_sign=' + call_sign + '&id=' + meshchat_id, function(data) {
+    $.getJSON('/cgi-bin/meshchat?action=messages&call_sign=' + call_sign + '&id=' + meshchat_id + '&epoch=' + epoch(), function(data) {
         var html = '';
+        if (data == null) return;
         for (var i = 0; i < data.length; i++) {
             var date = new Date(0);
             date.setUTCSeconds(data[i].epoch);
@@ -101,7 +103,11 @@ function load_messages() {
             html += '<td>' + format_date(date) + '</td>';
             html += '<td>' + message + '</td>';
             html += '<td>' + data[i].call_sign + '</td>';
-            html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+            if (data[i].platform == 'node') {
+                html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+            } else {
+                html += '<td>' + data[i].node + '</td>';
+            }
             html += '</tr>';
         }
         $('#message-table').html(html);
@@ -112,6 +118,7 @@ function load_messages() {
 function load_users() {
     $.getJSON('/cgi-bin/meshchat?action=users&call_sign=' + call_sign + '&id=' + meshchat_id, function(data) {
         var html = '';
+        if (data == null) return;
         for (var i = 0; i < data.length; i++) {
             var date = new Date(0);
             date.setUTCSeconds(data[i].epoch);
@@ -126,7 +133,12 @@ function load_users() {
             } else {
                 html += '<td><a href="' + data[i].id + '" onclick="start_video(\'' + data[i].id + '\');return false;">' + data[i].call_sign + '</td>';
             }
-            html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+
+            if (data[i].platform == 'node') {
+                html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+            } else {
+                html += '<td>' + data[i].node + '</td>';
+            }
             html += '<td>' + format_date(date) + '</td>';
             html += '</tr>';
         }
