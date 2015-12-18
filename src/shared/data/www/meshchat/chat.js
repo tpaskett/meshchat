@@ -124,16 +124,15 @@ function load_users() {
             date.setUTCSeconds(data[i].epoch);
             if ((epoch() - data[i].epoch) > 240) continue;
             if ((epoch() - data[i].epoch) > 120) {
-				html += '<tr class="grey-background">';
+                html += '<tr class="grey-background">';
             } else {
-				html += '<tr>';
-            }           
+                html += '<tr>';
+            }
             if (enable_video == 0) {
                 html += '<td>' + data[i].call_sign + '</td>';
             } else {
                 html += '<td><a href="' + data[i].id + '" onclick="start_video(\'' + data[i].id + '\');return false;">' + data[i].call_sign + '</td>';
             }
-
             if (data[i].platform == 'node') {
                 html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
             } else {
@@ -206,7 +205,7 @@ function start_video(id) {
         mediaConnection = peer.call(id, window.localStream);
         // Hang up on an existing call if present
         //if (window.existingCall) {
-        //	window.existingCall.close();
+        //  window.existingCall.close();
         //  }
         // Wait for stream on the call, then set peer video display
         mediaConnection.on('stream', function(stream) {

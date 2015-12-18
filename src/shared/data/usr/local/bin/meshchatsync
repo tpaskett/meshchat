@@ -20,7 +20,7 @@ if ( !-d $meshchat_path ) {
 
 save_messages_db_version();
 
-chmod(0777, $meshchat_path);
+chmod( 0777, $meshchat_path );
 
 while (1) {
     my $node_list = node_list();
@@ -29,12 +29,12 @@ while (1) {
     %sync_status  = ();
 
     foreach my $node_info (@$node_list) {
-        my $remote_node = $$node_info{node};
+        my $remote_node     = $$node_info{node};
         my $remote_platform = $$node_info{platform};
 
         my $port = '';
 
-        if ($remote_platform eq 'node') {
+        if ( $remote_platform eq 'node' ) {
             $port = ':8080';
         }
 
@@ -50,7 +50,7 @@ while (1) {
         # Get remote users file
         unlink( $meshchat_path . '/remote_users' );
         my $escape_node = url_escape($node);
-        my $output = `wget -S -T 10 "http://$remote_node$port/cgi-bin/meshchat?action=users_raw&platform=$platform&node=$escape_node" -O $meshchat_path/remote_users 2>&1`;
+        my $output      = `wget -S -T 10 "http://$remote_node$port/cgi-bin/meshchat?action=users_raw&platform=$platform&node=$escape_node" -O $meshchat_path/remote_users 2>&1`;
 
         #dbg $output;
 
@@ -85,12 +85,12 @@ while (1) {
                     merge_files($remote_node);
                 }
             }
-        }    
+        }
 
         # Get remote messages
         unlink( $meshchat_path . '/remote_messages' );
 
-        my $remote_version = `wget -T 10 http://$remote_node$port/cgi-bin/meshchat\\?action=messages_version -O - 2> /dev/null`;        
+        my $remote_version = `wget -T 10 http://$remote_node$port/cgi-bin/meshchat\\?action=messages_version -O - 2> /dev/null`;
 
         # Check the version of the remote db against ours. Only download the db if the remote has a different copy
 
@@ -116,10 +116,11 @@ while (1) {
                         $sync_status{$remote_node} = time();
                         merge_messages();
                     }
-                } else {
+                }
+                else {
                     dbg "failed md5 check $file_md5 $1";
                 }
-            }            
+            }
         }
     }
 
@@ -190,7 +191,7 @@ sub merge_messages {
     }
     close(LMSG);
 
-    open( MSG, '>>' . $messages_db_file );    
+    open( MSG, '>>' . $messages_db_file );
     foreach my $rmsg_id ( keys %rmsg ) {
         if ( !exists $lmsg{$rmsg_id} ) {
             print MSG $rmsg{$rmsg_id};
@@ -299,9 +300,9 @@ sub merge_files {
     }
 
     foreach my $file_node ( keys %lfiles ) {
-        my @parts = split( "\t", $lfiles{$file_node} );    
+        my @parts = split( "\t", $lfiles{$file_node} );
         print "L *$parts[1]* *$remote_node* $lfiles{$file_node}\n";
-        if ($parts[1] ne $remote_node) {
+        if ( $parts[1] ne $remote_node ) {
             print "WROTE!\n";
             print FILES $lfiles{$file_node};
         }
@@ -344,7 +345,7 @@ sub trim_db {
         unlink($messages_db_file);
         `cp $meshchat_path/shrink_messages $messages_db_file`;
         unlink( $meshchat_path . '/shrink_messages' );
-    }    
+    }
 
     release_lock();
 }

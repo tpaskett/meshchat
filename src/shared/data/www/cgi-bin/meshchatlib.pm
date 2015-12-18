@@ -5,7 +5,7 @@ use meshchatconfig;
 sub dbg {
     my $txt = shift;
 
-    if ($debug == 1) { print "$txt\n"; }
+    if ( $debug == 1 ) { print "$txt\n"; }
 }
 
 sub get_lock {
@@ -20,16 +20,17 @@ sub get_lock {
 }
 
 sub node_name {
-    if ($platform eq 'node') {
-        return lc(nvram_get("node"));
-    } elsif ($platform eq 'pi') {
-        open (HST, "/etc/hostname");
+    if ( $platform eq 'node' ) {
+        return lc( nvram_get("node") );
+    }
+    elsif ( $platform eq 'pi' ) {
+        open( HST, "/etc/hostname" );
         my $hostname = <HST>;
         close(HST);
 
         chomp($hostname);
 
-        if ($hostname eq '') {
+        if ( $hostname eq '' ) {
             $hostname = `hostname`;
             chomp($hostname);
         }
@@ -49,7 +50,7 @@ sub file_md5 {
 
     # Fix to work on OSX
 
-    if ($output eq '') {
+    if ( $output eq '' ) {
         $output = `md5 -r $file`;
     }
 
@@ -88,7 +89,7 @@ sub save_messages_db_version {
     print VER messages_db_version() . "\n";
     close(VER);
 
-    chmod(0666, $messages_version_file);
+    chmod( 0666, $messages_version_file );
 }
 
 sub messages_db_version {
@@ -115,17 +116,17 @@ sub file_storage_stats {
     #my $stats = `df | grep /tmp | awk '{print $2} {print $3}'`;
     my @lines = `df -k $local_files_dir`;
 
-    my ( $dev, $blocks, $used, $available ) = split(/\s+/, $lines[1]);
+    my ( $dev, $blocks, $used, $available ) = split( /\s+/, $lines[1] );
 
-    $used = $used * 1024;
+    $used      = $used * 1024;
     $available = $available * 1024;
 
     $total = $used + $available;
 
     my $local_files_bytes = 0;
 
-    if ($platform eq 'pi') {
-        $max_file_storage = $total * 0.9;
+    if ( $platform eq 'pi' ) {
+        $max_file_storage  = $total * 0.9;
         $local_files_bytes = $used;
     }
 
@@ -155,19 +156,20 @@ sub file_storage_stats {
 sub node_list {
     my $nodes;
 
-    if ($platform eq 'node') {
+    if ( $platform eq 'node' ) {
         $nodes = mesh_node_list();
-    } else {
+    }
+    else {
         $nodes = pi_node_list();
     }
 
-    push (@$nodes, @$extra_nodes);
+    push( @$nodes, @$extra_nodes );
 
-    open(PI, $pi_nodes_file);
+    open( PI, $pi_nodes_file );
     while (<PI>) {
         my $pi_node = $_;
         chomp($pi_node);
-        push (@$nodes, { platform => 'pi', node => lc($pi_node) });
+        push( @$nodes, { platform => 'pi', node => lc($pi_node) } );
     }
     close(PI);
 
@@ -179,7 +181,7 @@ sub pi_node_list {
 
     my $route = `ip route show | grep default 2> /dev/null`;
 
-    my $items = split(/\s/, $route);
+    my $items = split( /\s/, $route );
 
     my $gw = $items[2];
 
@@ -192,24 +194,24 @@ sub pi_node_list {
 
     foreach my $line (@output) {
         $count++;
-        if ($count < 3) { next; }
+        if ( $count < 3 ) { next; }
 
-        my ($ip) = split(/\s+/, $line);
+        my ($ip) = split( /\s+/, $line );
 
         $ips{$ip} = 1;
     }
 
     my $nodes = [];
 
-    foreach my $ip (keys %ips) {
-        my @numbers = split (/\./, $ip);
-        my $ip_addr = pack("C4", @numbers);
-        my ($hostname) = (gethostbyaddr($ip_addr, 2))[0];        
-        my ($name) = split(/\./, $hostname);
+    foreach my $ip ( keys %ips ) {
+        my @numbers = split( /\./, $ip );
+        my $ip_addr = pack( "C4", @numbers );
+        my ($hostname) = ( gethostbyaddr( $ip_addr, 2 ) )[0];
+        my ($name) = split( /\./, $hostname );
 
         dbg "$name $ip";
 
-        if ($name ne '') {
+        if ( $name ne '' ) {
             push( @$nodes, { platform => 'node', node => lc($name) } );
         }
     }
@@ -253,7 +255,7 @@ sub mesh_node_list {
 
     foreach my $host ( keys %hosts ) {
         if ( $hosts{$host}{hide} != 1 ) {
-            push( @$nodes, { platform => 'node', node => lc($hosts{$host}{name}) });
+            push( @$nodes, { platform => 'node', node => lc( $hosts{$host}{name} ) } );
 
             #print "$hosts{$host}{name}\n";
         }

@@ -119,7 +119,7 @@ sub messages {
                     message   => unpack_message( $parts[2] ),
                     call_sign => $parts[3],
                     node      => $parts[4],
-                    platform => $parts[5]
+                    platform  => $parts[5]
                 }
             );
         }
@@ -143,7 +143,7 @@ sub messages {
 
     my $epoch = time();
 
-    if ($query{epoch} > $epoch) { $epoch = $query{epoch}; }
+    if ( $query{epoch} > $epoch ) { $epoch = $query{epoch}; }
 
     open( USERS, '>' . $local_users_status_file );
     foreach my $call_sign ( keys %users ) {
@@ -327,22 +327,23 @@ sub users_raw {
     }
     close(USERS);
 
-    if ($query{platform} eq 'pi') {
+    if ( $query{platform} eq 'pi' ) {
+
         # If a pi queried us, we need to save it to query it
         # It is not in the node list from olsr
 
         my $found = 0;
 
-        open(PI, $pi_nodes_file);
+        open( PI, $pi_nodes_file );
         while (<PI>) {
             my $pi_node = $_;
             chomp($pi_node);
-            if ($pi_node eq $query{node}) { $found = 1; }
+            if ( $pi_node eq $query{node} ) { $found = 1; }
         }
         close(PI);
 
-        if ($found == 0) {
-            open (PI, ">>$pi_nodes_file");
+        if ( $found == 0 ) {
+            open( PI, ">>$pi_nodes_file" );
             print PI "$query{node}\n";
             close(PI);
         }
@@ -422,7 +423,7 @@ sub send_message {
 
     my $epoch = time();
 
-    if ($query{epoch} > $epoch) { $epoch = $query{epoch}; }
+    if ( $query{epoch} > $epoch ) { $epoch = $query{epoch}; }
 
     my $line = hash() . "\t$epoch\t$message\t$query{call_sign}\t" . $node . "\t$platform\n";
 
@@ -432,7 +433,7 @@ sub send_message {
 
     open( MSG, ">>" . $messages_db_file );
     print MSG $line;
-    close(MSG);    
+    close(MSG);
 
     save_messages_db_version();
 
@@ -556,11 +557,11 @@ sub files {
             push(
                 @$files,
                 {
-                    file  => $file,
-                    epoch => file_epoch( $local_files_dir . '/' . $file ),
-                    size  => file_size( $local_files_dir . '/' . $file ),
-                    node  => $node,
-                    local => 1,
+                    file     => $file,
+                    epoch    => file_epoch( $local_files_dir . '/' . $file ),
+                    size     => file_size( $local_files_dir . '/' . $file ),
+                    node     => $node,
+                    local    => 1,
                     platform => 'node'
                 }
             );
@@ -581,11 +582,11 @@ sub files {
             push(
                 @$files,
                 {
-                    file  => $parts[0],
-                    epoch => $parts[3],
-                    size  => $parts[2],
-                    node  => $parts[1],
-                    local => 0,
+                    file     => $parts[0],
+                    epoch    => $parts[3],
+                    size     => $parts[2],
+                    node     => $parts[1],
+                    local    => 0,
                     platform => $parts[4]
                 }
             );
@@ -748,7 +749,7 @@ sub hosts {
         my @lines = `wget -T 3 http://$remote_node:8080/cgi-bin/meshchat\\?action=hosts_raw -O - 2> /dev/null`;
 
         foreach my $lines (@lines) {
-            if ($line =~ /error/ || $line eq '') { next; }
+            if ( $line =~ /error/ || $line eq '' ) { next; }
             my ( $ip, $hostname ) = split( "\t", $line );
             push(
                 @$hosts,
