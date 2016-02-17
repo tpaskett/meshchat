@@ -3,12 +3,15 @@ if [ -d /www/meshchat/db ]
 then
     if [ -f /www/meshchat/db/messages ]
     then
-	/bin/chmod 666 /www/meshchat/db/messages
+	     /bin/chmod 666 /www/meshchat/db/messages
     fi
     if [ -f /www/meshchat/db/messages_lock ]
     then
-	/bin/chmod 666 /www/meshchat/db/messages_lock
+	     /bin/chmod 666 /www/meshchat/db/messages_lock
     fi
+
+     /bin/chown -R root:root /www/cgi-bin
+     /bin/chown -R root:root /www/meshchat
 
     /etc/init.d/meshchatsync enable
     #killall meshchatsync

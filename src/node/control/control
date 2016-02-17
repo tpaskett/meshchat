@@ -1,6 +1,6 @@
 Package: meshchat
-Version: 0.2
-Depends: wget-nossl
+Version: 0.5
+Depends: curl
 Provides: 
 Source: package/meshchat
 Section: net

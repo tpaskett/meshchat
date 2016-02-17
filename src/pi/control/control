@@ -1,6 +1,6 @@
 Package: meshchat
-Version: 0.2
-Depends: wget, apache2
+Version: 0.5
+Depends: curl, apache2
 Provides: 
 Source: package/meshchat
 Section: net

@@ -6,5 +6,6 @@ update-rc.d -f meshchatsync remove
 
 rm -rf /tmp/meshchat
 rm -rf /var/www/html/meshchat/files
+rm -rf /var/www/meshchat
 
 exit 0

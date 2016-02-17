@@ -18,6 +18,10 @@ if ( !-d $meshchat_path ) {
     `touch $lock_file`;
 }
 
+if (!-e $lock_file) {
+    `touch $lock_file`;
+}
+
 save_messages_db_version();
 
 chmod( 0777, $meshchat_path );
@@ -31,14 +35,19 @@ while (1) {
     foreach my $node_info (@$node_list) {
         my $remote_node     = $$node_info{node};
         my $remote_platform = $$node_info{platform};
+        my $remote_port = $$node_info{port};
 
         my $port = '';
 
-        if ( $remote_platform eq 'node' ) {
+        if ($remote_port ne '') {
+            $port = ':' . $remote_port;
+        }
+
+        if ( $port eq '' && $remote_platform eq 'node' ) {
             $port = ':8080';
         }
 
-        dbg $remote_node . ' ' . $remote_platform;
+        dbg $remote_node . ':' . $port . ' ' . $remote_platform;
 
         my $version = get_messages_db_version();
 
@@ -50,7 +59,7 @@ while (1) {
         # Get remote users file
         unlink( $meshchat_path . '/remote_users' );
         my $escape_node = url_escape($node);
-        my $output      = `wget -S -T 10 "http://$remote_node$port/cgi-bin/meshchat?action=users_raw&platform=$platform&node=$escape_node" -O $meshchat_path/remote_users 2>&1`;
+        my $output      = `curl --retry 0 --connect-timeout $connect_timeout -sD - "http://$remote_node$port/cgi-bin/meshchat?action=users_raw&platform=$platform&node=$escape_node" -o $meshchat_path/remote_users 2>&1`;
 
         #dbg $output;
 
@@ -61,7 +70,7 @@ while (1) {
             next;
         }
 
-        if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+        if ( $output =~ /Content\-MD5\: (.*)\r\n/ ) {
             my $file_md5 = file_md5( $meshchat_path . '/remote_users' );
             if ( $file_md5 eq $1 ) {
                 my $cur_size = file_size( $meshchat_path . '/remote_users' );
@@ -74,9 +83,9 @@ while (1) {
 
         # Get remote files file
         unlink( $meshchat_path . '/remote_files' );
-        $output = `wget -S -T 10 http://$remote_node$port/cgi-bin/meshchat\\?action=local_files_raw -O $meshchat_path/remote_files 2>&1`;
+        $output = `curl --retry 0 --connect-timeout $connect_timeout -sD - http://$remote_node$port/cgi-bin/meshchat?action=local_files_raw -o $meshchat_path/remote_files 2>&1`;
 
-        if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+        if ( $output =~ /Content\-MD5\: (.*)\r\n/ ) {
             my $file_md5 = file_md5( $meshchat_path . '/remote_files' );
             if ( $file_md5 eq $1 ) {
                 my $cur_size = file_size( $meshchat_path . '/remote_files' );
@@ -90,7 +99,7 @@ while (1) {
         # Get remote messages
         unlink( $meshchat_path . '/remote_messages' );
 
-        my $remote_version = `wget -T 10 http://$remote_node$port/cgi-bin/meshchat\\?action=messages_version -O - 2> /dev/null`;
+        my $remote_version = `curl --retry 0 --connect-timeout $connect_timeout -sD - http://$remote_node$port/cgi-bin/meshchat?action=messages_version -o - 2> /dev/null`;
 
         # Check the version of the remote db against ours. Only download the db if the remote has a different copy
 
@@ -102,12 +111,12 @@ while (1) {
             next;
         }
 
-        $output = `wget -S -T 10 http://$remote_node$port/cgi-bin/meshchat\\?action=messages_raw -O $meshchat_path/remote_messages 2>&1`;
+        $output = `curl --retry 0 --connect-timeout $connect_timeout -sD - http://$remote_node$port/cgi-bin/meshchat?action=messages_raw -o $meshchat_path/remote_messages 2>&1`;
 
         dbg $output;
 
         if ( -e $meshchat_path . '/remote_messages' ) {
-            if ( $output =~ /Content\-MD5\: (.*)\n/ ) {
+            if ( $output =~ /Content\-MD5\: (.*)\r\n/ ) {
                 my $file_md5 = file_md5( $meshchat_path . '/remote_messages' );
                 if ( $file_md5 eq $1 ) {
                     my $cur_size = file_size( $meshchat_path . '/remote_messages' );
@@ -118,7 +127,7 @@ while (1) {
                     }
                 }
                 else {
-                    dbg "failed md5 check $file_md5 $1";
+                    dbg "failed remote_messages md5 check *$file_md5* *$1*";
                 }
             }
         }
@@ -219,7 +228,7 @@ sub merge_users {
     while (<RUSERS>) {
         my @parts = split( "\t", $_ );
         $key = $parts[0] . "\t" . $parts[1] . "\t" . $parts[2];
-        if ( $_ !~ /error/ && $#parts > 2 ) { $rusers{$key} = $parts[3]; }
+        if ( $_ !~ /error/ && $#parts > 2 ) { $rusers{$key} = $parts[3] . "\t" . $parts[4]; }
     }
     close(RUSERS);
 
@@ -229,7 +238,7 @@ sub merge_users {
     while (<LUSERS>) {
         my @parts = split( "\t", $_ );
         $key = $parts[0] . "\t" . $parts[1] . "\t" . $parts[2];
-        if ( $_ !~ /error/ && $#parts > 2 ) { $lusers{$key} = $parts[3]; }
+        if ( $_ !~ /error/ && $#parts > 2 ) { $lusers{$key} = $parts[3] . "\t" . $parts[4]; }
     }
     close(LUSERS);
 
@@ -238,7 +247,7 @@ sub merge_users {
     foreach my $key ( keys %rusers ) {
         my @parts = split( "\t", $key );
 
-        #print "$key\n$#parts\n";
+        dbg "$key\n$#parts\n";
 
         if ( exists( $lusers{$key} ) ) {
             if ( $lusers{$key} > $rusers{$key} ) {
@@ -275,7 +284,7 @@ sub merge_files {
 
     open( RFILES, $meshchat_path . '/remote_files' );
     while (<RFILES>) {
-        print "LINE: $_";
+        dbg "LINE: $_";
         my @parts = split( "\t", $_ );
         $key = $parts[0];
         if ( $_ !~ /error/ && $#parts > 2 ) { $rfiles{$key} = $_; }
@@ -295,15 +304,15 @@ sub merge_files {
     open( FILES, '>' . $remote_files_file );
 
     foreach my $file_node ( keys %rfiles ) {
-        print "R *$file_node* *$remote_node* $rfiles{$file_node}\n";
+        dbg "R *$file_node* *$remote_node* $rfiles{$file_node}\n";
         print FILES $rfiles{$file_node};
     }
 
     foreach my $file_node ( keys %lfiles ) {
         my @parts = split( "\t", $lfiles{$file_node} );
-        print "L *$parts[1]* *$remote_node* $lfiles{$file_node}\n";
+        dbg "L *$parts[1]* *$remote_node* $lfiles{$file_node}\n";
         if ( $parts[1] ne $remote_node ) {
-            print "WROTE!\n";
+            dbg "WROTE!\n";
             print FILES $lfiles{$file_node};
         }
     }

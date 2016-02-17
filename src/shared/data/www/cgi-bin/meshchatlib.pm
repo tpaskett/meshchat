@@ -46,6 +46,8 @@ sub release_lock {
 sub file_md5 {
     my $file = shift;
 
+    if (!-e $file) { return ''; }
+
     my $output = `md5sum $file`;
 
     # Fix to work on OSX
@@ -126,23 +128,29 @@ sub file_storage_stats {
     my $local_files_bytes = 0;
 
     if ( $platform eq 'pi' ) {
-        $max_file_storage  = $total * 0.9;
+        $max_file_storage  = $total * 0.95;
         $local_files_bytes = $used;
     }
 
-    get_lock();
+    if ( $platform eq 'node' ) {
+        get_lock();
 
-    opendir( my $dh, $local_files_dir );
-    my $file;
+        opendir( my $dh, $local_files_dir );
+        my $file;
 
-    while ( $file = readdir($dh) ) {
-        if ( $file !~ /^\./ ) {
-            $local_files_bytes += file_size( $local_files_dir . '/' . $file ),;
+        while ( $file = readdir($dh) ) {
+            if ( $file !~ /^\./ ) {
+                $local_files_bytes += file_size( $local_files_dir . '/' . $file ),;
+            }
         }
-    }
-    closedir($dh);
+        closedir($dh);
 
-    release_lock();
+        release_lock();
+    }
+
+    if (($max_file_storage - $local_files_bytes) < 0) {
+        $local_files_bytes = $max_file_storage;
+    }
 
     return {
         total      => $total,
@@ -163,56 +171,35 @@ sub node_list {
         $nodes = pi_node_list();
     }
 
-    push( @$nodes, @$extra_nodes );
+    push( @$nodes, @$extra_nodes );    
 
-    open( PI, $pi_nodes_file );
-    while (<PI>) {
-        my $pi_node = $_;
-        chomp($pi_node);
-        push( @$nodes, { platform => 'pi', node => lc($pi_node) } );
+    foreach my $node (@$nodes) {
+        dbg "$$node{platform} $$node{node} $$node{port}\n";
     }
-    close(PI);
+
+    dbg "\n\n";
 
     return $nodes;
 }
 
 sub pi_node_list {
-    dbg "pi_node_list";
+    dbg "pi_node_list";    
 
-    my $route = `ip route show | grep default 2> /dev/null`;
+    my $local_node = node_name();
 
-    my $items = split( /\s/, $route );
-
-    my $gw = $items[2];
-
-    $gw = '10.197.0.17';
-
-    my @output = `wget -T 10 http://$gw:2006/topo -O - 2> /dev/null`;
-
-    my $count = 0;
-    my %ips;
-
-    foreach my $line (@output) {
-        $count++;
-        if ( $count < 3 ) { next; }
-
-        my ($ip) = split( /\s+/, $line );
-
-        $ips{$ip} = 1;
-    }
+    my @output = `curl --retry 0 --connect-timeout $connect_timeout http://localnode.local.mesh:8080/cgi-bin/meshchat\\?action=meshchat_nodes 2> /dev/null`;
 
     my $nodes = [];
 
-    foreach my $ip ( keys %ips ) {
-        my @numbers = split( /\./, $ip );
-        my $ip_addr = pack( "C4", @numbers );
-        my ($hostname) = ( gethostbyaddr( $ip_addr, 2 ) )[0];
-        my ($name) = split( /\./, $hostname );
+    foreach my $line (@output) {
+        my ($node, $port) = split("\t", $line);
 
-        dbg "$name $ip";
+        if (lc($local_node) eq lc($node)) { next; }
 
-        if ( $name ne '' ) {
-            push( @$nodes, { platform => 'node', node => lc($name) } );
+        if ($port == 8080) {
+            push( @$nodes, { platform => 'node', node => $node } );
+        } else {
+            push( @$nodes, { platform => 'pi', node => $node } );
         }
     }
 
@@ -222,42 +209,18 @@ sub pi_node_list {
 sub mesh_node_list {
     dbg "mesh_node_list";
 
-    my %hosts;
+    my $local_node = node_name();
 
-    foreach (`cat /var/run/hosts_olsr 2>/dev/null`) {
-        next unless /^\d/;
+    foreach (`grep -i "/meshchat|" /var/run/services_olsr`) {
         chomp;
-        ( $ip, $name, $junk, $originator, $mid, $midnum ) = split /\s+/, $_;
-        next unless $originator;
-        next if $originator eq "myself";
-        if ( $name =~ /^dtdlink\..*$/ ) {
-            $hosts{$ip}{name} = $name;
-            next;
-        }
+        if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
+            if (lc($local_node) eq lc($1)) { next; }
 
-        if ( defined $mid and $midnum =~ /^\#(\d+)/ ) {
-            if ( !exists $hosts{$ip}{name} ) {
-                $hosts{$ip}{name} = $name;
+            if ($2 == 8080) {
+                push( @$nodes, { platform => 'node', node => lc($1), port => $2 } );
+            } else {
+                push( @$nodes, { platform => 'pi', node => lc($1), port => $2 } );
             }
-            $hosts{$ip}{hide}        = 1;
-            $hosts{$originator}{mid} = $1;
-        }
-        elsif ( $ip eq $originator ) {
-            if   ( $hosts{$ip}{name} ) { $hosts{$ip}{tactical} = $name }
-            else                       { $hosts{$ip}{name}     = $name }
-        }
-        else {
-            push @{ $hosts{$originator}{hosts} }, $name;
-        }
-    }
-
-    my $nodes = [];
-
-    foreach my $host ( keys %hosts ) {
-        if ( $hosts{$host}{hide} != 1 ) {
-            push( @$nodes, { platform => 'node', node => lc( $hosts{$host}{name} ) } );
-
-            #print "$hosts{$host}{name}\n";
         }
     }
 

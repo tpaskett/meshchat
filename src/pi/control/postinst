@@ -5,9 +5,11 @@ service apache2 restart > /dev/null 2>&1
 
 update-rc.d meshchatsync defaults 99
 
-mkdir /var/www/html/meshchat/files
+mkdir -p /var/www/html/meshchat/files
 
 chown -R www-data:www-data /var/www/html/meshchat
+
+ln -s /var/www/html/meshchat /var/www/meshchat
 
 /etc/init.d/meshchatsync start
 

@@ -60,6 +60,9 @@ elsif ( $query{action} eq 'hosts_raw' ) {
 elsif ( $query{action} eq 'upload_file' ) {
     upload_file();
 }
+elsif ( $query{action} eq 'meshchat_nodes' ) {
+    meshchat_nodes();
+}
 else {
     error('error no action');
 }
@@ -170,6 +173,7 @@ sub messages {
 
     foreach my $message (@sorted) {
         $message->{message} =~ s/\n/\\n/g;
+        $message->{message} =~ s/\"/\\"/g;
         $json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '"},';
     }
 
@@ -325,29 +329,7 @@ sub users_raw {
         my $line = $_;
         print "$line";
     }
-    close(USERS);
-
-    if ( $query{platform} eq 'pi' ) {
-
-        # If a pi queried us, we need to save it to query it
-        # It is not in the node list from olsr
-
-        my $found = 0;
-
-        open( PI, $pi_nodes_file );
-        while (<PI>) {
-            my $pi_node = $_;
-            chomp($pi_node);
-            if ( $pi_node eq $query{node} ) { $found = 1; }
-        }
-        close(PI);
-
-        if ( $found == 0 ) {
-            open( PI, ">>$pi_nodes_file" );
-            print PI "$query{node}\n";
-            close(PI);
-        }
-    }
+    close(USERS);    
 
     release_lock();
 }
@@ -746,7 +728,7 @@ sub hosts {
     my $node_list = node_list();
 
     foreach my $remote_node (@$node_list) {
-        my @lines = `wget -T 3 http://$remote_node:8080/cgi-bin/meshchat\\?action=hosts_raw -O - 2> /dev/null`;
+        my @lines = `curl --retry 0 --connect-timeout $connect_timeout http://$remote_node:8080/cgi-bin/meshchat\\?action=hosts_raw 2> /dev/null`;
 
         foreach my $lines (@lines) {
             if ( $line =~ /error/ || $line eq '' ) { next; }
@@ -777,6 +759,17 @@ sub hosts {
     $json .= ']';
 
     print $json;
+}
+
+sub meshchat_nodes {
+    print "Content-type: text/plain\r\n\r\n";
+
+    foreach (`grep -i "/meshchat|" /var/run/services_olsr`) {
+        chomp;
+        if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
+            print "$1\t$2\n";
+        }
+    }
 }
 
 sub to_dotquad {

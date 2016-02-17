@@ -12,9 +12,10 @@ our $messages_version_file      = $meshchat_path . '/messages_version';
 our $pi_nodes_file              = $meshchat_path . '/pi';
 our $local_files_dir            = '/var/www/html/meshchat/files';
 our $poll_interval              = 10;
-our $non_meshchat_poll_interval = 300;
+our $non_meshchat_poll_interval = 600;
+our $connect_timeout            = 5;
 our $platform                   = 'pi';
-our $debug                      = 1;
+our $debug                      = 0;
 our $extra_nodes                = [];
 
 1;

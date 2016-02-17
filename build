@@ -16,7 +16,7 @@ cd ../control
 tar cfz ../../../control.tar.gz .
 cd ../../..
 gzip data.tar
-tar cfz meshchat_0.2_all.ipk control.tar.gz data.tar.gz debian-binary
+tar cfz meshchat_0.5_all.ipk control.tar.gz data.tar.gz debian-binary
 
 ### Build pi package
 rm -rf data.tar.gz control.tar.gz
@@ -39,5 +39,5 @@ tar cfz ../data.tar.gz `find . -type f`
 cd ../src/pi/control
 tar cfz ../../../control.tar.gz .
 cd ../../..
-ar r meshchat_0.2_all.deb debian-binary control.tar.gz data.tar.gz
+ar r meshchat_0.5_all.deb debian-binary control.tar.gz data.tar.gz
 rm -rf tmp
