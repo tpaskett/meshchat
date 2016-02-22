@@ -220,3 +220,34 @@ th, td {
 .center {
     text-align: center;
 }
+
+.loading {
+  border: 4px solid #FFF;
+  border-top-color: transparent;
+  border-left-color: transparent;
+  width: 20px;
+  height: 20px;
+  //opacity: 0.8;
+  border-radius: 50%;
+  animation: loading 0.7s infinite linear;
+  -webkit-animation: loading 0.7s infinite linear;
+}
+
+
+
+@keyframes loading {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@-webkit-keyframes loading {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
+}

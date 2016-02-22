@@ -1,112 +1,166 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Mesh Chat v0.5</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0, user-scalable=no">
-        <link href="skeleton.css" rel="stylesheet">
-        <link href="style.css" rel="stylesheet">
+        <title>
+            Mesh Chat v0.5
+        </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0, user-scalable=no"/>
+        <link href="skeleton.css" rel="stylesheet"/>
+        <link href="style.css" rel="stylesheet"/>
     </head>
     <body class="has-docked-nav">
         <div class="container hidden" id="call-sign-container">
             <form>
                 <div class="row">
-                    <div class="four columns">&nbsp;</div>
                     <div class="four columns">
-                        <label for="call-sign">Your Call Sign</label>
-                        <input class="u-full-width" type="text" placeholder="" id="call-sign">
+                        &nbsp;
                     </div>
-                    <div class="four columns">&nbsp;</div>
+                    <div class="four columns">
+                        <label for="call-sign">
+                            Your Call Sign
+                        </label>
+                        <input class="u-full-width" type="text" placeholder="" id="call-sign"/>
+                    </div>
+                    <div class="four columns">
+                        &nbsp;
+                    </div>
                 </div>
                 <div class="row" id="login-row">
-                    <div class="four columns">&nbsp;</div>
                     <div class="four columns">
-                        <input id="submit-call-sign" class="button-primary" type="submit" value="Login">
+                        &nbsp;
                     </div>
-                    <div class="four columns">&nbsp;</div>
+                    <div class="four columns">
+                        <input id="submit-call-sign" class="button-primary" type="submit" value="Login"/>
+                    </div>
+                    <div class="four columns">
+                        &nbsp;
+                    </div>
                 </div>
             </form>
         </div>
         <div class="container hidden" id="chat-container">
-            <div class="navbar-spacer"></div>
+            <div class="navbar-spacer">
+            </div>
             <nav class="navbar">
                 <div class="container">
                     <ul class="navbar-list">
-                        <li class="navbar-item"><a class="navbar-link" href="/meshchat/">Chat</a></li>
-                        <li class="navbar-item"><a class="navbar-link" href="/meshchat/files.html">Files</a></li>
-                        <li class="navbar-item"><a class="navbar-link" href="/meshchat/status.html">Status</a></li>
-                        <li class="navbar-item logout"><a class="navbar-link" href="#" id="logout">Logout</a></li>
+                        <li class="navbar-item">
+                            <a class="navbar-link" href="/meshchat/">
+                                Chat
+                            </a>
+                        </li>
+                        <li class="navbar-item">
+                            <a class="navbar-link" href="/meshchat/files.html">
+                                Files
+                            </a>
+                        </li>
+                        <li class="navbar-item">
+                            <a class="navbar-link" href="/meshchat/status.html">
+                                Status
+                            </a>
+                        </li>
+                        <li class="navbar-item logout">
+                            <a class="navbar-link" href="#" id="logout">
+                                Logout
+                            </a>
+                        </li>
                     </ul>
                 </div>
-            </nav>
-            <div class="row hidden" id="video-container">
+            </nav>            
+            <div class="row">
                 <div class="six columns">
-                <video id="local-video" muted="true" autoplay></video>
-                <button id="hangup" class="button-primary">Hangup</button>
+                    <form>
+                        <label for="message">
+                            New Message
+                        </label>
+                        <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message">
+                        </textarea>                        
+                        <button id="submit-message" class="button-primary">
+                            Send
+                        </button>
+                        <button id="download-messages" class="button-primary">
+                            Download Messages
+                        </button>
+                    </form>
+                </div>
+                <div class="six columns">
+                    <table class="u-full-width remote" id="remote-users">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Call Sign
+                                </th>
+                                <th>
+                                    Node
+                                </th>
+                                <th>
+                                    Last Seen
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table">
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="six columns">
-            <video id="remote-video" muted="true" autoplay></video>
+            <div class="row">
+                <div class="tweleve columns">
+                    <label class="last-updated">
+                        <span class="label-body" id="last-update">
+                            Last updated 3 secs ago
+                        </span>
+                    </label>
+                    <div id="ohsnap">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="tweleve columns">
+                    <table class="u-full-width message">
+                        <thead id="message-header">
+                            <tr>
+                                <th>
+                                    Time
+                                </th>
+                                <th>
+                                    Message
+                                </th>
+                                <th>
+                                    Call Sign
+                                </th>
+                                <th>
+                                    Node
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="message-table">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="tweleve columns center">
+                    <div id="copyright">
+                        MeshChat Copyright &copy; Trevor Paskett - K7FPV
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="six columns">
-            <form>
-                <label for="message">New Message</label>
-                <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message"></textarea>
-                <input id="submit-message" class="button-primary" type="submit" value="Send">
-                <button id="download-messages" class="button-primary">Download Messages</button>
-            </form>
-        </div>
-        <div class="six columns">
-            <table class="u-full-width remote" id="remote-users">
-                <thead>
-                    <tr>
-                        <th>Call Sign</th>
-                        <th>Node</th>
-                        <th>Last Seen</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table">
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="row">
-        <div class="tweleve columns">
-            <label class="last-updated">
-                <span class="label-body" id="last-update">Last updated 3 secs ago</span>
-            </label>
-            <div id="ohsnap"></div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="tweleve columns">
-            <table class="u-full-width message">
-                <thead id="message-header">
-                    <tr>
-                        <th>Time</th>
-                        <th>Message</th>
-                        <th>Call Sign</th>
-                        <th>Node</th>
-                    </tr>
-                </thead>
-                <tbody id="message-table">
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="row">
-        <div class="tweleve columns center">
-            <div id="copyright">MeshChat Copyright &copy; Trevor Paskett - K7FPV</div>
-        </div>
-    </div>
-</div>
-<script src="zepto.min.js"></script>
-<script src="fx.js"></script>
-<script src="fx_methods.js"></script>
-<script src="ohsnap.js"></script>
-<script src="js.cookie.js"></script>
-<script src="peer.min.js"></script>
-<script src="chat.js"></script>
-<script src="shared.js"></script>
-</body>
+        <script src="zepto.min.js">
+        </script>
+        <script src="fx.js">
+        </script>
+        <script src="fx_methods.js">
+        </script>
+        <script src="ohsnap.js">
+        </script>
+        <script src="js.cookie.js">
+        </script>
+        <script src="peer.min.js">
+        </script>
+        <script src="chat.js">
+        </script>
+        <script src="shared.js">
+        </script>
+    </body>
 </html>

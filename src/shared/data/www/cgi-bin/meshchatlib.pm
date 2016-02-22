@@ -15,6 +15,7 @@ sub get_lock {
         return;
     }
     else {
+        print '{"status":500, "response":"Could not get lock"}';
         die('could not get lock');
     }
 }
@@ -210,6 +211,8 @@ sub mesh_node_list {
     dbg "mesh_node_list";
 
     my $local_node = node_name();
+
+    my $nodes = [];
 
     foreach (`grep -i "/meshchat|" /var/run/services_olsr`) {
         chomp;

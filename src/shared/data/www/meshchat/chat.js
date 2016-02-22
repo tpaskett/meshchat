@@ -38,28 +38,68 @@ function start_chat() {
 }
 
 function meshchat_init() {
+    $('#message').val('');
     meshchat_id = Cookies.get('meshchat_id');
     if (meshchat_id == undefined) {
         Cookies.set('meshchat_id', make_id());
         meshchat_id = Cookies.get('meshchat_id');
     }
-    console.log(meshchat_id);
-    init_video();
+    //console.log(meshchat_id);    
     $('#submit-message').on('click', function(e) {
         e.preventDefault();
         if ($('#message').val().length == 0) return;
-        //$(this).prop("disabled", true);
-        $.post('/cgi-bin/meshchat', {
-            action: 'send_message',
-            message: $('#message').val(),
-            call_sign: call_sign,
-            epoch: epoch()
-        }, function(response) {
-            //$(this).prop("disabled", false);
-            $('#message').val('');
-            ohSnap('Message sent', 'green');
-            load_messages();
-        })
+
+        ohSnapX();
+
+        $(this).prop("disabled", true);
+        $('#message').prop("disabled", true);
+        $(this).html('<div class="loading"></div>');
+        $('#download-messages').hide();
+
+        $.ajax({
+            url: '/cgi-bin/meshchat',
+            type: "POST",
+            tryCount : 0,
+            retryLimit : 3,
+            data:
+            {
+                action: 'send_message',
+                message: $('#message').val(),
+                call_sign: call_sign,
+                epoch: epoch()
+            },
+            dataType: "json",
+            context: this,
+            success: function(data, textStatus, jqXHR)
+            {
+                console.log(data);
+                if (data.status == 500) {
+                    ohSnap('Error sending message: ' + data.response, 'red', {time: '30000'});  
+                } else {
+                    $('#message').val('');
+                    ohSnap('Message sent', 'green');
+                    load_messages();
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown)
+            {
+                if (textStatus == 'timeout') {
+                    this.tryCount++;
+                    if (this.tryCount <= this.retryLimit) {
+                        //try again
+                        $.ajax(this);
+                        return;
+                    }    
+                    ohSnap('Error sending message: ' + textStatus, 'red', {time: '30000'});        
+                }                
+            },
+            complete: function(jqXHR, textStatus) {
+                $(this).prop("disabled", false);
+                $('#message').prop("disabled", false);
+                $(this).html('Send');
+                $('#download-messages').show();
+            }
+        });
     });
     $('#submit-call-sign').on('click', function(e) {
         e.preventDefault();
@@ -69,14 +109,7 @@ function meshchat_init() {
         $('#call-sign-container').addClass('hidden');
         $('#chat-container').removeClass('hidden');
         start_chat();
-    });
-    $('#hangup').on('click', function(e) {
-        e.preventDefault();
-        mediaConnection.close();
-        peer.disconnect();
-        $('#video-container').addClass('hidden');
-        peer.reconnect();
-    });
+    });    
     $('#download-messages').on('click', function(e) {
         e.preventDefault();
         location.href = '/cgi-bin/meshchat?action=messages_download';
@@ -174,79 +207,5 @@ function load_users() {
             //console.log( "users complete" );
             users_updating = false;
         }
-    });
-}
-
-function init_video() {
-    if (enable_video == 0) return;
-    // PeerJS object
-    //var peer = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
-    peer = new Peer(meshchat_id, {
-        host: 'laytonwestdistrict',
-        port: 9000,
-        debug: 0
-    });
-    peer.on('open', function() {
-        //$('#my-id').text(peer.id);
-        console.log('connected to peer: ' + peer.id)
-    });
-    // Receiving a call
-    peer.on('call', function(call) {
-        // Answer the call automatically (instead of prompting user) for demo purposes
-        $('#video-container').removeClass('hidden');
-        navigator.getUserMedia({
-            audio: true,
-            video: true
-        }, function(stream) {
-            // Set your video displays
-            $('#local-video').prop('src', URL.createObjectURL(stream));
-            window.localStream = stream;
-            call.answer(window.localStream);
-        }, function() {
-            ohSnap('Video error', 'red');
-        });
-        //if (window.existingCall) {
-        //    window.existingCall.close();
-        //}
-        // Wait for stream on the call, then set peer video display
-        call.on('stream', function(stream) {
-            console.log('got remote stream');
-            $('#remote-video').prop('src', URL.createObjectURL(stream));
-        });
-        window.existingCall = call;
-    });
-    peer.on('error', function(err) {
-        ohSnap('Video error: ' + err.message, 'red');
-        //alert(err.message);
-        // Return to step 2 if error occurs
-        //step2();
-    });
-}
-
-function start_video(id) {
-    // Get audio/video stream
-    $('#video-container').removeClass('hidden');
-    navigator.getUserMedia({
-        audio: true,
-        video: true
-    }, function(stream) {
-        // Set your video displays
-        $('#local-video').prop('src', URL.createObjectURL(stream));
-        window.localStream = stream;
-        //step2();
-        mediaConnection = peer.call(id, window.localStream);
-        // Hang up on an existing call if present
-        //if (window.existingCall) {
-        //  window.existingCall.close();
-        //  }
-        // Wait for stream on the call, then set peer video display
-        mediaConnection.on('stream', function(stream) {
-            console.log('got remote stream');
-            $('#remote-video').prop('src', URL.createObjectURL(stream));
-        });
-        window.existingCall = mediaConnection;
-    }, function() {
-        ohSnap('Video error', 'red');
-        //$('#step1-error').show(); 
     });
 }

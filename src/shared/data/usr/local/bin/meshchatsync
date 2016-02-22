@@ -99,7 +99,7 @@ while (1) {
         # Get remote messages
         unlink( $meshchat_path . '/remote_messages' );
 
-        my $remote_version = `curl --retry 0 --connect-timeout $connect_timeout -sD - http://$remote_node$port/cgi-bin/meshchat?action=messages_version -o - 2> /dev/null`;
+        my $remote_version = `curl --retry 0 --connect-timeout $connect_timeout http://$remote_node$port/cgi-bin/meshchat?action=messages_version -o - 2> /dev/null`;
 
         # Check the version of the remote db against ours. Only download the db if the remote has a different copy
 
@@ -140,6 +140,8 @@ while (1) {
     unlink( $meshchat_path . '/remote_messages' );
     unlink( $meshchat_path . '/remote_users' );
     unlink( $meshchat_path . '/remote_files' );
+
+    dbg "sleeping $poll_interval";
 
     sleep($poll_interval);
 }

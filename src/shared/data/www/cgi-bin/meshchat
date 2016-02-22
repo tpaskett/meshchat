@@ -419,7 +419,7 @@ sub send_message {
 
     save_messages_db_version();
 
-    release_lock();
+    release_lock();    
 
     print '{"status":200, "response":"OK"}';
 }
