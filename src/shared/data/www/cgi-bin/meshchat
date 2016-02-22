@@ -616,7 +616,7 @@ sub files {
 sub upload_file {
     read_postdata();
 
-    my $new_file_size = file_size('/tmp/web/upload/file');
+    my $new_file_size = file_size('$tmp_upload_dir/file');
 
     my $stats = file_storage_stats();
 
@@ -625,16 +625,16 @@ sub upload_file {
     print STDERR "$$stats{files_free}\n";
 
     if ( $new_file_size > $$stats{files_free} ) {
-        unlink('/tmp/web/upload/file');
+        unlink('$tmp_upload_dir/file');
 
         print "Content-type: application/json\r\n\r\n";
 
         print '{"status":500, "response":"Not enough storage, delete some files"}';
     }
     else {
-        `cp /tmp/web/upload/file '$local_files_dir/$parms{uploadfile}'`;
+        `cp $tmp_upload_dir/file '$local_files_dir/$parms{uploadfile}'`;
 
-        unlink('/tmp/web/upload/file');
+        unlink('$tmp_upload_dir/file');
 
         print "Content-type: application/json\r\n\r\n";
 

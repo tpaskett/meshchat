@@ -216,3 +216,7 @@ th, td {
 	.remote td{ word-wrap: break-word; }
 	td:first-child{ white-space: normal; }
 }
+
+.center {
+    text-align: center;
+}

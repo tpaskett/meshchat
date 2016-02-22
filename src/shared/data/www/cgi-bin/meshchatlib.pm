@@ -329,8 +329,8 @@ sub read_postdata {
             $line = fgets(10);
             push( @parse_errors, "not blank: '$line'" ) unless $line eq "\r\n";
             $tmp = "";
-            system "mkdir -p /tmp/web/upload";
-            open( $handle, ">/tmp/web/upload/file" );
+            system "mkdir -p $tmp_upload_dir";
+            open( $handle, ">$tmp_upload_dir/file" );
             while (1) {
 
                 # get the next line from the form
@@ -353,7 +353,7 @@ sub read_postdata {
         }
     }
 
-    push( @parse_errors, `md5sum /tmp/web/upload/file` ) if $parsedebug and $handle;
+    push( @parse_errors, `md5sum $tmp_upload_dir/file` ) if $parsedebug and $handle;
 }
 
 1;

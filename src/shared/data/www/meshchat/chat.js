@@ -4,6 +4,8 @@ var meshchat_id;
 var peer;
 var mediaConnection;
 var enable_video = 0;
+var messages_updating = false;
+var users_updating = false;
 // Compatibility shim
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 $(function() {
@@ -91,57 +93,87 @@ function meshchat_init() {
 }
 
 function load_messages() {
-    $.getJSON('/cgi-bin/meshchat?action=messages&call_sign=' + call_sign + '&id=' + meshchat_id + '&epoch=' + epoch(), function(data) {
-        var html = '';
-        if (data == null) return;
-        for (var i = 0; i < data.length; i++) {
-            var date = new Date(0);
-            date.setUTCSeconds(data[i].epoch);
-            var message = data[i].message;
-            message = message.replace(/(\r\n|\n|\r)/g, "<br/>");
-            html += '<tr>';
-            html += '<td>' + format_date(date) + '</td>';
-            html += '<td>' + message + '</td>';
-            html += '<td>' + data[i].call_sign + '</td>';
-            if (data[i].platform == 'node') {
-                html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
-            } else {
-                html += '<td>' + data[i].node + '</td>';
+    if (messages_updating == true) return;
+
+    messages_updating = true;
+
+    $.ajax({
+        url: '/cgi-bin/meshchat?action=messages&call_sign=' + call_sign + '&id=' + meshchat_id + '&epoch=' + epoch(),
+        type: "GET",
+        dataType: "json",
+        context: this,
+        success: function(data, textStatus, jqXHR)
+        {
+            var html = '';
+            if (data == null) return;
+            for (var i = 0; i < data.length; i++) {
+                var date = new Date(0);
+                date.setUTCSeconds(data[i].epoch);
+                var message = data[i].message;
+                message = message.replace(/(\r\n|\n|\r)/g, "<br/>");
+                html += '<tr>';
+                html += '<td>' + format_date(date) + '</td>';
+                html += '<td>' + message + '</td>';
+                html += '<td>' + data[i].call_sign + '</td>';
+                if (data[i].platform == 'node') {
+                    html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+                } else {
+                    html += '<td>' + data[i].node + '</td>';
+                }
+                html += '</tr>';
             }
-            html += '</tr>';
+            $('#message-table').html(html);
+            last_messages_update = epoch();
+        },
+        complete: function(jqXHR, textStatus) {
+            //console.log( "messages complete" );
+            messages_updating = false;
         }
-        $('#message-table').html(html);
-        last_messages_update = epoch();
     });
 }
 
 function load_users() {
-    $.getJSON('/cgi-bin/meshchat?action=users&call_sign=' + call_sign + '&id=' + meshchat_id, function(data) {
-        var html = '';
-        if (data == null) return;
-        for (var i = 0; i < data.length; i++) {
-            var date = new Date(0);
-            date.setUTCSeconds(data[i].epoch);
-            if ((epoch() - data[i].epoch) > 240) continue;
-            if ((epoch() - data[i].epoch) > 120) {
-                html += '<tr class="grey-background">';
-            } else {
-                html += '<tr>';
+    if (users_updating == true) return;
+
+    users_updating = true;
+
+    $.ajax({
+        url: '/cgi-bin/meshchat?action=users&call_sign=' + call_sign + '&id=' + meshchat_id,
+        type: "GET",
+        dataType: "json",
+        context: this,
+        success: function(data, textStatus, jqXHR)
+        {
+            var html = '';
+            if (data == null) return;
+            for (var i = 0; i < data.length; i++) {
+                var date = new Date(0);
+                date.setUTCSeconds(data[i].epoch);
+                if ((epoch() - data[i].epoch) > 240) continue;
+                if ((epoch() - data[i].epoch) > 120) {
+                    html += '<tr class="grey-background">';
+                } else {
+                    html += '<tr>';
+                }
+                if (enable_video == 0) {
+                    html += '<td>' + data[i].call_sign + '</td>';
+                } else {
+                    html += '<td><a href="' + data[i].id + '" onclick="start_video(\'' + data[i].id + '\');return false;">' + data[i].call_sign + '</td>';
+                }
+                if (data[i].platform == 'node') {
+                    html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+                } else {
+                    html += '<td>' + data[i].node + '</td>';
+                }
+                html += '<td>' + format_date(date) + '</td>';
+                html += '</tr>';
             }
-            if (enable_video == 0) {
-                html += '<td>' + data[i].call_sign + '</td>';
-            } else {
-                html += '<td><a href="' + data[i].id + '" onclick="start_video(\'' + data[i].id + '\');return false;">' + data[i].call_sign + '</td>';
-            }
-            if (data[i].platform == 'node') {
-                html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
-            } else {
-                html += '<td>' + data[i].node + '</td>';
-            }
-            html += '<td>' + format_date(date) + '</td>';
-            html += '</tr>';
+            $('#users-table').html(html);
+        },
+        complete: function(jqXHR, textStatus) {
+            //console.log( "users complete" );
+            users_updating = false;
         }
-        $('#users-table').html(html);
     });
 }
 

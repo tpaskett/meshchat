@@ -11,6 +11,7 @@ our $remote_files_file          = $meshchat_path . '/files_remote';
 our $messages_version_file      = $meshchat_path . '/messages_version';
 our $local_files_dir            = $meshchat_path . '/files';
 our $pi_nodes_file              = $meshchat_path . '/pi';
+our $tmp_upload_dir             = '/tmp/web/upload';
 our $poll_interval              = 10;
 our $non_meshchat_poll_interval = 600;
 our $connect_timeout            = 5;

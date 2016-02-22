@@ -1,9 +1,10 @@
 $(function() {
     $('#logout').on('click', function(e){
-	e.preventDefault();
-	Cookies.remove('meshchat_call_sign');
-	location.reload();
+	   e.preventDefault();
+	   Cookies.remove('meshchat_call_sign');
+	   location.reload();
     });
+    $('#copyright').html('MeshChat Copyright &copy; ' + new Date().getFullYear() + ' Trevor Paskett - K7FPV');
 });
 
 function format_date(date) {
