@@ -1,7 +1,7 @@
 our $lock_fh;
 our $meshchat_path              = "/tmp/meshchat";
-our $max_messages_db_size       = 1024 * 1024;                            # 1m
-our $max_file_storage           = 2 * 1024 * 1024;                        # 2m
+our $max_messages_db_size       = 512 * 1024;
+our $max_file_storage           = 512 * 1024;
 our $lock_file                  = $meshchat_path . '/lock';
 our $messages_db_file           = $meshchat_path . '/messages';
 our $sync_status_file           = $meshchat_path . '/sync_status';

@@ -4,7 +4,7 @@ $(function() {
 	   Cookies.remove('meshchat_call_sign');
 	   location.reload();
     });
-    $('#copyright').html('MeshChat Copyright &copy; ' + new Date().getFullYear() + ' Trevor Paskett - K7FPV');
+    $('#copyright').html('MeshChat Copyright &copy; ' + new Date().getFullYear() + ' <a href="http://www.trevorsbench.com">Trevor Paskett - K7FPV</a>');
 });
 
 function format_date(date) {
