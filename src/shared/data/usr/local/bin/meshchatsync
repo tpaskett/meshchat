@@ -135,7 +135,7 @@ while (1) {
 
     log_status();
 
-    trim_db();
+    #trim_db();
 
     unlink( $meshchat_path . '/remote_messages' );
     unlink( $meshchat_path . '/remote_users' );
@@ -213,6 +213,10 @@ sub merge_messages {
         }
     }
     close(MSG);
+
+    sort_db();
+
+    trim_db();
 
     save_messages_db_version();
 
@@ -327,36 +331,48 @@ sub merge_files {
 sub trim_db {
     get_lock();
 
-    # Trim the file to the restricted size
-    my $cur_size = file_size($messages_db_file);
+    dbg "trim_db";
 
-    if ( $cur_size > $max_messages_db_size ) {
-        my $overage       = $cur_size - $max_messages_db_size;
-        my $deleted_bytes = 0;
+    my $line_count = 0;
 
-        open( NEW, '>$meshchat_path/shrink_messages' );
-        open( OLD, $messages_db_file );
-
-        while (<OLD>) {
-            my $line = $_;
-
-            if ( $deleted_bytes > $overage ) {
-                print NEW $line;
-            }
-            else {
-                $deleted_bytes += length($line);
-            }
-        }
-
-        #print "Removed $deleted_bytes\n";
-
-        close(OLD);
-        close(NEW);
-
-        unlink($messages_db_file);
-        `cp $meshchat_path/shrink_messages $messages_db_file`;
-        unlink( $meshchat_path . '/shrink_messages' );
+    # Get a count of the lines
+    open( MSG, $messages_db_file );
+    while(<MSG>) {
+        $line_count++;
     }
+    close(MSG);
+
+    if ($line_count <= $max_messages_db_size) {
+        dbg "nothing to trim $line_count";
+        return;
+    }
+
+    my $lines_to_trim = $line_count - $max_messages_db_size;
+    $line_count = 1;
+
+    dbg "trimming $lines_to_trim lines";
+
+    open( NEW, ">$meshchat_path/shrink_messages" );
+    open( OLD, $messages_db_file );
+
+    while (<OLD>) {
+        my $line = $_;        
+
+        if ( $line_count > $lines_to_trim ) {
+            print NEW $line;
+        }        
+
+        $line_count++;
+    }
+
+    #print "Removed $deleted_bytes\n";
+
+    close(OLD);
+    close(NEW);
+
+    unlink($messages_db_file);
+    `cp $meshchat_path/shrink_messages $messages_db_file`;
+    unlink( $meshchat_path . '/shrink_messages' );    
 
     release_lock();
 }

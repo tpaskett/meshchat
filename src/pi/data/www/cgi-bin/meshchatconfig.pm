@@ -1,7 +1,7 @@
 our $lock_fh;
 our $meshchat_path              = "/tmp/meshchat";
-our $max_messages_db_size       = 1024 * 1024;                            # 1m
-our $max_file_storage           = 2 * 1024 * 1024;                        # 2m
+our $max_messages_db_size       = 500;
+our $max_file_storage           = 2 * 1024 * 1024;
 our $lock_file                  = $meshchat_path . '/lock';
 our $messages_db_file           = '/var/www/html/meshchat/db/messages';
 our $sync_status_file           = $meshchat_path . '/sync_status';
@@ -16,7 +16,7 @@ our $poll_interval              = 10;
 our $non_meshchat_poll_interval = 600;
 our $connect_timeout            = 5;
 our $platform                   = 'pi';
-our $debug                      = 0;
+our $debug                      = 1;
 our $extra_nodes                = [];
 
 1;

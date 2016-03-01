@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>
-            Mesh Chat v0.6
+            Mesh Chat
         </title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0 maximum-scale=1.0, user-scalable=no"/>
         <link href="skeleton.css" rel="stylesheet"/>
@@ -66,97 +66,158 @@
                         </li>
                     </ul>
                 </div>
-            </nav>            
+            </nav>
+            <div class="row info">
+                <div class="three columns" id="version">
+                    <strong>
+                        Mesh Chat v0.7b
+                    </strong>
+                </div>
+                <div class="three columns center" id="node">
+                    Node: K7FPV
+                </div>
+                <div class="three columns center" id="callsign">
+                    Call Sign: K7FPV
+                </div>
+                <div class="three columns right" id="last-update">
+                    <strong>
+                        Updated:
+                    </strong>
+                    3 secs ago
+                </div>
+            </div>
             <div class="row">
                 <div class="six columns">
-                    <form>
-                        <label for="message">
-                            New Message
-                        </label>
-                        <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message">
-                        </textarea>                        
-                        <button id="submit-message" class="button-primary">
-                            Send
-                        </button>
-                        <button id="download-messages" class="button-primary">
-                            Download Messages
-                        </button>
-                    </form>
+                    <div class="panel send-message-panel">
+                        <div class="panel-header">
+                            Send a Message
+                        </div>
+                        <div class="panel-body">
+                            <form>
+                                <label for="message">
+                                    New Message
+                                </label>
+                                <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message">
+                                </textarea>
+                                <label for="send-channel" id="send-channel-label">
+                                    Channel:
+                                </label>
+                                <input type="text" value="" id="new-channel" placeholder="Enter new channel name" class="hidden">
+                                <select id="send-channel">
+                                    <option value="">
+                                        Everything
+                                    </option>                                    
+                                </select>
+                                <button id="submit-message" class="button-primary">
+                                    Send
+                                </button>
+                                <br/>
+                                <br/>
+                                <button id="download-messages" class="button-primary">
+                                    Download Messages
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 <div class="six columns">
-                    <table class="u-full-width remote" id="remote-users">
-                        <thead>
-                            <tr>
-                                <th>
-                                    Call Sign
-                                </th>
-                                <th>
-                                    Node
-                                </th>
-                                <th>
-                                    Last Seen
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table">
-                        </tbody>
-                    </table>
+                    <div class="panel users-panel">
+                        <div class="panel-header">
+                            Mesh Chat Users
+                        </div>
+                        <div class="panel-body users-panel-body">
+                            <table class="u-full-width remote" id="remote-users">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            Call Sign
+                                        </th>
+                                        <th>
+                                            Node
+                                        </th>
+                                        <th>
+                                            Last Seen
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table">                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="row">
                 <div class="tweleve columns">
-                    <label class="last-updated">
-                        <span class="label-body" id="last-update">
-                            Last updated 3 secs ago
-                        </span>
-                    </label>
                     <div id="ohsnap">
                     </div>
                 </div>
             </div>
             <div class="row">
                 <div class="tweleve columns">
-                    <table class="u-full-width message">
-                        <thead id="message-header">
-                            <tr>
-                                <th>
-                                    Time
-                                </th>
-                                <th>
-                                    Message
-                                </th>
-                                <th>
-                                    Call Sign
-                                </th>
-                                <th>
-                                    Node
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="message-table">
-                        </tbody>
-                    </table>
+                    <div class="panel">
+                        <div class="panel-header">
+                            Messages
+                            <div class="pull-right">
+                                Channel:                                
+                                <select id="channels">
+                                    <option value="">
+                                        Everything
+                                    </option>                                    
+                                </select>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <table class="u-full-width message" id="message-parent-table">
+                                <thead id="message-header">
+                                    <tr>
+                                        <th>
+                                            Time
+                                        </th>
+                                        <th>
+                                            Message
+                                        </th>
+                                        <th>
+                                            Call Sign
+                                        </th>
+                                        <th>
+                                            Channel
+                                        </th>
+                                        <th>
+                                            Node
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <colgroup>
+                                    <col style="width:10%">
+                                    <col style="width:45%">
+                                    <col style="width:15%">
+                                    <col style="width:15%">
+                                    <col style="width:15%">
+                                </colgroup>  
+                                <tbody id="message-table">                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="row">
                 <div class="tweleve columns center">
                     <div id="copyright">
-                        MeshChat Copyright &copy; <a href="http://www.trevorsbench.com">Trevor Paskett - K7FPV</a>
+                        MeshChat Copyright &copy;
+                        <a href="http://www.trevorsbench.com">
+                            Trevor Paskett - K7FPV
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
-        <script src="zepto.min.js">
-        </script>
-        <script src="fx.js">
-        </script>
-        <script src="fx_methods.js">
+        <script src="jquery-2.2.0.min.js">
         </script>
         <script src="ohsnap.js">
         </script>
         <script src="js.cookie.js">
-        </script>
-        <script src="peer.min.js">
         </script>
         <script src="chat.js">
         </script>

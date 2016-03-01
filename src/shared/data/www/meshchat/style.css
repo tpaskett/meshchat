@@ -8,6 +8,14 @@ input {
     text-transform: uppercase;
 }
 
+#copyright {
+    margin-top: 10px;
+}
+
+.pull-right {
+    float: right;
+}
+
 .alert {
     padding: 15px;
     margin-bottom: 20px;
@@ -59,7 +67,7 @@ td:first-child {
     height: 6.5rem;
     background: #fff;
     z-index: 99;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
 .navbar-spacer {
@@ -126,6 +134,11 @@ progress {
     font-size: 1em;
 }
 
+#message-parent-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
 video {
     width: 100% !important;
     height: auto !important;
@@ -140,6 +153,10 @@ th, td {
     padding-right: 0px;
 }
 
+table td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
 
 /*
 #message-table tr td:nth-child(4) {
@@ -172,7 +189,7 @@ th, td {
         float: right;
     }
     .navbar-link {
-        font-size: 11px;
+        font-size: 13px;
         text-transform: uppercase;
         font-weight: 600;
         letter-spacing: .2rem;
@@ -219,6 +236,76 @@ th, td {
 
 .center {
     text-align: center;
+}
+
+.right {
+    text-align: right;
+}
+
+.info {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#send-channel-label {
+    display: inline;
+    margin-right: 20px;
+}
+
+#send-channel {
+    margin-right: 10px;
+}
+
+#channels {
+    vertical-align: top;
+}
+
+
+
+.panel {
+    border-color: #337ab7;
+    box-shadow: none;
+    border: 1px solid #337ab7;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.panel-header {
+    background-image: linear-gradient(to bottom,#337ab7 0,#2e6da4 100%);
+    color: #fff;
+    font-size: 18px;
+    padding: 10px;
+}
+
+.panel-body {
+    padding: 15px;
+}
+
+button.button-primary {
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
+select {
+    height: 25px;
+}
+
+.users-panel {
+    max-height: 400px;
+    overflow: hidden;
+}
+
+.send-message-panel {
+    max-height: 400px;
+}
+
+.users-panel-body {
+    overflow-y: auto;
+    max-height: 320px;
+}
+
+form {
+    margin-bottom: 0px;
 }
 
 .loading {

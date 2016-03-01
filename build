@@ -7,6 +7,7 @@ touch src/shared/data/www/meshchat/db/messages
 chmod 666 src/shared/data/www/meshchat/db/messages
 
 ### Build AREDN package
+export COPYFILE_DISABLE=1
 
 cd src/shared/data
 tar cf ../../../data.tar `find . -type f`
@@ -16,7 +17,7 @@ cd ../control
 tar cfz ../../../control.tar.gz .
 cd ../../..
 gzip data.tar
-tar cfz meshchat_0.6_all.ipk control.tar.gz data.tar.gz debian-binary
+COPYFILE_DISABLE=1 tar cfz meshchat_0.7b1_all.ipk control.tar.gz data.tar.gz debian-binary
 
 ### Build pi package
 rm -rf data.tar.gz control.tar.gz
@@ -39,5 +40,5 @@ tar cfz ../data.tar.gz `find . -type f`
 cd ../src/pi/control
 tar cfz ../../../control.tar.gz .
 cd ../../..
-ar r meshchat_0.6_all.deb debian-binary control.tar.gz data.tar.gz
+COPYFILE_DISABLE=1 ar r meshchat_0.7b1_all.deb debian-binary control.tar.gz data.tar.gz
 rm -rf tmp

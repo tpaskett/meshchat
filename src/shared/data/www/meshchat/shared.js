@@ -2,9 +2,16 @@ $(function() {
     $('#logout').on('click', function(e){
 	   e.preventDefault();
 	   Cookies.remove('meshchat_call_sign');
-	   location.reload();
+	   window.location = '/meshchat';
     });
-    $('#copyright').html('MeshChat Copyright &copy; ' + new Date().getFullYear() + ' <a href="http://www.trevorsbench.com">Trevor Paskett - K7FPV</a>');
+
+    $.getJSON('/cgi-bin/meshchat?action=config', function(data) {
+        document.title = 'Mesh Chat v' + data.version;
+        $('#version').html('<strong>Mesh Chat v' + data.version + '</strong>');
+        $('#node').html('<strong>Node:</strong> ' + data.node);
+        $('#callsign').html('<strong>Call Sign:</strong> ' + Cookies.get('meshchat_call_sign'));
+        $('#copyright').html('Mesh Chat v' + data.version + ' Copyright &copy; ' + new Date().getFullYear() + ' <a href="http://www.trevorsbench.com">Trevor Paskett - K7FPV</a>');
+    });
 });
 
 function format_date(date) {

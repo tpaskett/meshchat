@@ -2,6 +2,8 @@ BEGIN { push @INC, '/www/cgi-bin', '/usr/lib/cgi-bin' }
 
 use meshchatconfig;
 
+our $version = '0.7b1';
+
 sub dbg {
     my $txt = shift;
 
@@ -253,6 +255,41 @@ sub url_escape {
     my ($rv) = @_;
     $rv =~ s/([^A-Za-z0-9])/sprintf("%%%2.2X", ord($1))/ge;
     return $rv;
+}
+
+sub sort_db {
+    get_lock();
+
+    my $messages = [];
+
+    open( MSG, $messages_db_file );
+    while (<MSG>) {
+        my $line = $_;
+        #chomp($line);
+
+        my @parts = split( "\t", $line );
+
+        my $msg = {
+            epoch => $parts[1],
+            id => hex($parts[0]),
+            line => $line
+        };
+
+        push(@$messages, $msg)        
+    }
+    close(MSG);
+
+    @$messages = sort { $a->{epoch} <=> $b->{epoch}    or 
+                        $a->{id}    <=> $b->{id} 
+                      } @$messages;
+
+    open( MSG, ">$messages_db_file" );
+    foreach my $msg (@$messages) {
+        print MSG $$msg{line};
+    }
+    close(MSG);
+
+    release_lock();
 }
 
 #### perlfunc.pm

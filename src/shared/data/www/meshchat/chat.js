@@ -6,6 +6,8 @@ var mediaConnection;
 var enable_video = 0;
 var messages_updating = false;
 var users_updating = false;
+var messages = [];
+var channel_filter = '';
 // Compatibility shim
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 $(function() {
@@ -18,11 +20,11 @@ function epoch() {
 
 function monitor_last_update() {
     var secs = epoch() - last_messages_update;
-    $('#last-update').html('Last updated ' + secs + ' seconds ago');
+    $('#last-update').html('<strong>Updated</strong> ' + secs + ' seconds ago');
 }
 
 function start_chat() {
-    $('#logout').html('Logout ' + call_sign);
+    //$('#logout').html('Logout ' + call_sign);   
     load_messages();
     load_users();
     monitor_last_update();
@@ -31,7 +33,7 @@ function start_chat() {
     }, 5000);
     setInterval(function() {
         load_users()
-    }, 5000);
+    }, 10000);
     setInterval(function() {
         monitor_last_update()
     }, 2500);
@@ -56,6 +58,12 @@ function meshchat_init() {
         $(this).html('<div class="loading"></div>');
         $('#download-messages').hide();
 
+        var channel = $('#send-channel').val();
+
+        if ($('#new-channel').val() != '') {
+            channel = $('#new-channel').val();
+        }
+
         $.ajax({
             url: '/cgi-bin/meshchat',
             type: "POST",
@@ -66,19 +74,23 @@ function meshchat_init() {
                 action: 'send_message',
                 message: $('#message').val(),
                 call_sign: call_sign,
-                epoch: epoch()
+                epoch: epoch(),
+                channel: channel
             },
             dataType: "json",
             context: this,
             success: function(data, textStatus, jqXHR)
             {
-                console.log(data);
                 if (data.status == 500) {
                     ohSnap('Error sending message: ' + data.response, 'red', {time: '30000'});  
                 } else {
                     $('#message').val('');
                     ohSnap('Message sent', 'green');
-                    load_messages();
+                    load_messages();        
+                    channel_filter = channel;      
+                    $('#new-channel').val('');
+                    $('#new-channel').hide();
+                    $('#send-channel').show();      
                 }
             },
             error: function(jqXHR, textStatus, errorThrown)
@@ -101,6 +113,7 @@ function meshchat_init() {
             }
         });
     });
+    
     $('#submit-call-sign').on('click', function(e) {
         e.preventDefault();
         if ($('#call-sign').val().length == 0) return;
@@ -110,10 +123,22 @@ function meshchat_init() {
         $('#chat-container').removeClass('hidden');
         start_chat();
     });    
+    
     $('#download-messages').on('click', function(e) {
         e.preventDefault();
         location.href = '/cgi-bin/meshchat?action=messages_download';
     });
+
+    $('#channels').on('change', function() {        
+        channel_filter = this.value;
+        process_messages();
+    });
+
+    $('#send-channel').on('change', function() {
+        $('#new-channel').show();
+        $(this).hide();
+    });
+
     var cookie_call_sign = Cookies.get('meshchat_call_sign');
     if (cookie_call_sign == undefined) {
         $('#call-sign-container').removeClass('hidden');
@@ -136,26 +161,12 @@ function load_messages() {
         dataType: "json",
         context: this,
         success: function(data, textStatus, jqXHR)
-        {
-            var html = '';
+        {            
             if (data == null) return;
-            for (var i = 0; i < data.length; i++) {
-                var date = new Date(0);
-                date.setUTCSeconds(data[i].epoch);
-                var message = data[i].message;
-                message = message.replace(/(\r\n|\n|\r)/g, "<br/>");
-                html += '<tr>';
-                html += '<td>' + format_date(date) + '</td>';
-                html += '<td>' + message + '</td>';
-                html += '<td>' + data[i].call_sign + '</td>';
-                if (data[i].platform == 'node') {
-                    html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
-                } else {
-                    html += '<td>' + data[i].node + '</td>';
-                }
-                html += '</tr>';
-            }
-            $('#message-table').html(html);
+
+            messages = data;
+
+            process_messages();
             last_messages_update = epoch();
         },
         complete: function(jqXHR, textStatus) {
@@ -163,6 +174,85 @@ function load_messages() {
             messages_updating = false;
         }
     });
+}
+
+function process_messages() {
+    var html = '';
+
+    $('#send-channel')
+    .find('option')
+    .remove()
+    .end();
+
+    $('#channels')
+    .find('option')
+    .remove()
+    .end();
+
+    var channels = {};
+
+    for (var i = 0; i < messages.length; i++) {
+        var row = '';        
+        var date = new Date(0);
+        date.setUTCSeconds(messages[i].epoch);
+        var message = messages[i].message;
+        message = message.replace(/(\r\n|\n|\r)/g, "<br/>");
+        row += '<tr>';
+        row += '<td>' + format_date(date) + '</td>';
+        row += '<td>' + message + '</td>';
+        row += '<td>' + messages[i].call_sign + '</td>';
+        row += '<td>' + messages[i].channel + '</td>';
+        if (messages[i].platform == 'node') {
+            row += '<td><a href="http://' + messages[i].node + ':8080">' + messages[i].node + '</a></td>';
+        } else {
+            row += '<td>' + messages[i].node + '</td>';
+        }
+        row += '</tr>';
+
+        if (messages[i].channel != "" && !channels.hasOwnProperty(messages[i].channel)) {
+            channels[messages[i].channel] = 1;
+        }
+
+        if (channel_filter != '') {
+            if (channel_filter == messages[i].channel) html += row;
+        } else {
+            html += row;
+        }
+    }
+
+    $('#message-table').html(html);           
+
+    $('#send-channel')
+    .append($("<option></option>")
+    .attr("value", "")
+    .text("Everything")); 
+
+    $('#send-channel')
+    .append($("<option></option>")
+    .attr("value", "Add New Channel")
+    .text("Add New Channel")); 
+
+    $('#channels')
+    .append($("<option></option>")
+    .attr("value", "")
+    .text("Everything")); 
+
+    for (var property in channels) {
+        if (channels.hasOwnProperty(property)) {
+            $('#send-channel')
+            .append($("<option></option>")
+            .attr("value", property)
+            .text(property)); 
+
+            $('#channels')
+            .append($("<option></option>")
+            .attr("value", property)
+            .text(property));
+        }
+    }
+
+    $("#channels").val(channel_filter);
+    $("#send-channel").val(channel_filter);
 }
 
 function load_users() {

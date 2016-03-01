@@ -1,5 +1,5 @@
 Package: meshchat
-Version: 0.6
+Version: 0.7b1
 Depends: curl, apache2
 Provides: 
 Source: package/meshchat

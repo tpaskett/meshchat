@@ -15,6 +15,9 @@ parse_params();
 if ( $query{action} eq 'messages' ) {
     messages();
 }
+elsif ( $query{action} eq 'config' ) {
+    config();
+}
 elsif ( $query{action} eq 'send_message' ) {
     send_message();
 }
@@ -84,8 +87,8 @@ sub parse_params {
         @pairs = split( /&/, $buffer );
         foreach $pair (@pairs) {
             ( $name, $value ) = split( /=/, $pair );
-            $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
             $value =~ s/\+/ /g;
+            $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
             $query{$name} = $value;
         }
     }
@@ -96,6 +99,12 @@ sub error {
 
     print "Content-type:text\r\n\r\n";
     print $msg;
+}
+
+sub config {
+    print "Content-type:application/json\r\n\r\n";
+
+    print "{\"version\":\"$version\",\"node\":\"$node\"}";
 }
 
 sub messages {
@@ -122,7 +131,8 @@ sub messages {
                     message   => unpack_message( $parts[2] ),
                     call_sign => $parts[3],
                     node      => $parts[4],
-                    platform  => $parts[5]
+                    platform  => $parts[5],
+                    channel   => $parts[6],
                 }
             );
         }
@@ -174,7 +184,7 @@ sub messages {
     foreach my $message (@sorted) {
         $message->{message} =~ s/\n/\\n/g;
         $message->{message} =~ s/\"/\\"/g;
-        $json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '"},';
+        $json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '","channel":"' . $message->{channel} . '"},';
     }
 
     if ( length($json) > 1 ) {
@@ -407,7 +417,7 @@ sub send_message {
 
     if ( $query{epoch} > $epoch ) { $epoch = $query{epoch}; }
 
-    my $line = hash() . "\t$epoch\t$message\t$query{call_sign}\t" . $node . "\t$platform\n";
+    my $line = hash() . "\t$epoch\t$message\t$query{call_sign}\t" . $node . "\t$platform\t$query{channel}\n";
 
     print STDERR $line;
 
