@@ -135,8 +135,10 @@ function meshchat_init() {
     });
 
     $('#send-channel').on('change', function() {
-        $('#new-channel').show();
-        $(this).hide();
+        if (this.value == "Add New Channel") {
+            $('#new-channel').show();
+            $(this).hide();
+        }
     });
 
     var cookie_call_sign = Cookies.get('meshchat_call_sign');

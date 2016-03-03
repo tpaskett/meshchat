@@ -7,7 +7,7 @@ our $version = '0.7b1';
 sub dbg {
     my $txt = shift;
 
-    if ( $debug == 1 ) { print "$txt\n"; }
+    if ( $debug == 1 ) { print STDERR "$txt\n"; }
 }
 
 sub get_lock {
@@ -230,6 +230,111 @@ sub mesh_node_list {
     }
 
     return $nodes;
+}
+
+sub process_message_action {
+    my $line = shift;
+
+    dbg "LINE: $line";
+
+    if ( $platform ne 'pi' ) { return; }
+
+    if (!-e $action_conf_file) { return; }
+
+    chomp($line);
+
+    my ($id, $epoch, $message, $call_sign, $node, $platform, $channel) = split(/\t/, $line);
+
+    $message = unpack_message($message);
+
+    my $action_file = "$meshchat_path/$id";
+
+    dbg "action file: $action_file\n";
+
+    open(FILE, ">$action_file");
+    print FILE "$id\t$epoch\t$message\t$call_sign\t$node\t$platform\t$channel\n";
+    close(FILE);
+
+    dbg "running action\n";
+
+    `perl /usr/local/bin/meshchat_action.pl $action_file > /tmp/ma.log 2>&1 &`;
+}
+
+sub action_error_log {
+    my $text = shift;
+
+    open(LOG, ">>$action_error_log_file");
+    print LOG "$text\n";
+    close(LOG);    
+}
+
+sub hash {
+    my $string = time() . int( rand(99999) );
+
+    my $hash = `echo $string | md5sum`;
+
+    # Fix to work on OSX
+
+    if ( $hash eq '' ) {
+        $hash = `echo $string | md5 -r`;
+    }
+
+    $hash =~ s/\s*\-//g;
+
+    chomp($hash);
+
+    $hash = substr( $hash, 0, 8 );
+
+    return $hash;
+}
+
+sub trim_db {
+    get_lock();
+
+    dbg "trim_db";
+
+    my $line_count = 0;
+
+    # Get a count of the lines
+    open( MSG, $messages_db_file );
+    while(<MSG>) {
+        $line_count++;
+    }
+    close(MSG);
+
+    if ($line_count <= $max_messages_db_size) {
+        dbg "nothing to trim $line_count";
+        return;
+    }
+
+    my $lines_to_trim = $line_count - $max_messages_db_size;
+    $line_count = 1;
+
+    dbg "trimming $lines_to_trim lines";
+
+    open( NEW, ">$meshchat_path/shrink_messages" );
+    open( OLD, $messages_db_file );
+
+    while (<OLD>) {
+        my $line = $_;        
+
+        if ( $line_count > $lines_to_trim ) {
+            print NEW $line;
+        }        
+
+        $line_count++;
+    }
+
+    #print "Removed $deleted_bytes\n";
+
+    close(OLD);
+    close(NEW);
+
+    unlink($messages_db_file);
+    `cp $meshchat_path/shrink_messages $messages_db_file`;
+    unlink( $meshchat_path . '/shrink_messages' );    
+
+    release_lock();
 }
 
 sub uri_unescape {

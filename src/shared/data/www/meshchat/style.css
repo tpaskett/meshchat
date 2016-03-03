@@ -158,6 +158,19 @@ table td {
     overflow-wrap: break-word;
 }
 
+textarea:focus {
+    border: 1px solid #337ab7;
+}
+
+textarea {
+    resize: none;
+}
+
+button.button-primary:hover {
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
 /*
 #message-table tr td:nth-child(4) {
     display: none;
@@ -291,7 +304,7 @@ select {
 }
 
 .users-panel {
-    max-height: 400px;
+    height: 400px;
     overflow: hidden;
 }
 

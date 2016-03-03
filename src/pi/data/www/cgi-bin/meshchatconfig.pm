@@ -4,6 +4,8 @@ our $max_messages_db_size       = 500;
 our $max_file_storage           = 2 * 1024 * 1024;
 our $lock_file                  = $meshchat_path . '/lock';
 our $messages_db_file           = '/var/www/html/meshchat/db/messages';
+our $action_log_file            = '/var/www/html/meshchat/db/action.log';
+our $action_error_log_file      = '/var/www/html/meshchat/db/action_error.log';
 our $sync_status_file           = $meshchat_path . '/sync_status';
 our $local_users_status_file    = $meshchat_path . '/users_local';
 our $remote_users_status_file   = $meshchat_path . '/users_remote';
@@ -18,5 +20,6 @@ our $connect_timeout            = 5;
 our $platform                   = 'pi';
 our $debug                      = 1;
 our $extra_nodes                = [];
+our $action_conf_file           = '/etc/meshchat_actions.conf';
 
 1;

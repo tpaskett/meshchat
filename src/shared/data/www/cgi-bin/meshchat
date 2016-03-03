@@ -427,9 +427,17 @@ sub send_message {
     print MSG $line;
     close(MSG);
 
+    sort_db();
+
+    trim_db();
+
     save_messages_db_version();
 
     release_lock();    
+
+    if ($query{no_action} != 1) {
+        process_message_action($line);
+    }
 
     print '{"status":200, "response":"OK"}';
 }
@@ -440,20 +448,6 @@ sub messages_version {
     print "Content-type:text\r\n\r\n";
 
     print $ver;
-}
-
-sub hash {
-    my $string = time() . int( rand(99999) );
-
-    my $hash = `echo $string | md5sum`;
-
-    $hash =~ s/\s*\-//g;
-
-    chomp($hash);
-
-    $hash = substr( $hash, 0, 8 );
-
-    return $hash;
 }
 
 sub users {
