@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+#
+# Mesh Chat Twilio SMS outgoing gateway
+# Version 1.0
+# License: MIT
+# Copyright K7FPV - Trevor Paskett <snoopytjp@gmail.com>
+# http://www.trevorsbench.com/meshchat-twilio-sms-gateway-outgoing
+# Depends: libjson-perl curl
+#
+# Variables
+# $account_sid - Account SID from your Twilio account
+# $auth_token - Auth Token from your Twilio account
+# $twilio_number - Twilio phone number to send the message from. Must be in E.164 format ie +18015551234
+# @phone_numbers - Array of phones numbers in E.164 format to send messages to
+# $error_log - Log file for errors
+
+my $account_sid = 'XXXX';
+my $auth_token = 'XXXX';
+my $twilio_number = '+18015554321';
+my @phone_numbers = qw( +18015551234 +18016661234 );
+my $error_log = '/tmp/meshchat_twilio_sms_out.log';
+
+####################
+
+use JSON;
+
+my $file = $ARGV[0];
+
+if (!-e $file) {
+	print "Could not find file $file\n";
+	exit(1);
+}
+
+open(FILE, "<$file");
+my $line = <FILE>;
+close(FILE);
+
+my ($id, $epoch, $message, $call_sign, $node, $platform, $channel) = split(/\t/, $line);
+
+foreach my $number (@phone_numbers) {
+	my $result = `curl -s -S -X POST 'https://api.twilio.com/2010-04-01/Accounts/$account_sid/Messages.json' --data-urlencode 'To=$number' --data-urlencode 'From=$twilio_number' --data-urlencode 'Body=$call_sign: $message' -u $account_sid:$auth_token 2> $error_log`;
+
+	if ($result eq '') {
+		open(FILE, "<$error_log");
+		my $line = <FILE>;
+		close(FILE);
+
+		chomp($line);
+
+		print "Twilio SMS curl error: $line\n";
+		exit(1);
+	}
+
+	my $json = decode_json($result);
+
+	if ($$json{error_code} != undef || $$json{status} == 401) {
+		print "Twilio SMS API error: $$json{detail}\n";
+		exit(1);
+	}
+}
+
+print "Twilio SMS: delivered sucessfully\n";
+
+exit(0);

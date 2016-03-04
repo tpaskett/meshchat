@@ -18,8 +18,11 @@ our $poll_interval              = 10;
 our $non_meshchat_poll_interval = 600;
 our $connect_timeout            = 5;
 our $platform                   = 'pi';
-our $debug                      = 1;
+our $debug                      = 0;
 our $extra_nodes                = [];
 our $action_conf_file           = '/etc/meshchat_actions.conf';
+
+our $pi_zone                    = 'MeshChat';
+our $local_meshchat_node        = 'localnode';
 
 1;

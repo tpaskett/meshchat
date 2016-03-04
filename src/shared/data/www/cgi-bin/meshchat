@@ -104,7 +104,9 @@ sub error {
 sub config {
     print "Content-type:application/json\r\n\r\n";
 
-    print "{\"version\":\"$version\",\"node\":\"$node\"}";
+    my $zone_name = zone_name();
+
+    print "{\"version\":\"$version\",\"node\":\"$node\",\"zone\":\"$zone_name\"}";
 }
 
 sub messages {
@@ -393,15 +395,6 @@ sub pack_message {
 
     $message =~ s/\n/\\n/g;
     $message =~ s/\"/\\"/g;
-
-    return $message;
-}
-
-sub unpack_message {
-    my $message = shift;
-
-    $message =~ s/\\n/\n/g;
-    $message =~ s/\\"/\"/g;
 
     return $message;
 }
@@ -768,7 +761,13 @@ sub hosts {
 sub meshchat_nodes {
     print "Content-type: text/plain\r\n\r\n";
 
-    foreach (`grep -i "/meshchat|" /var/run/services_olsr`) {
+    my $zone_name = $query{zone_name};
+
+    dbg "ZONE: $zone_name";
+
+    $zone_name .= '[[:space:]]';
+
+    foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep -e '$zone_name'`) {
         chomp;
         if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
             print "$1\t$2\n";

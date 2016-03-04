@@ -1,6 +1,18 @@
 #!/usr/bin/perl
+#
+# Mesh Chat Message Archiver
+# Version 1.0
+# License: MIT
+# Copyright K7FPV - Trevor Paskett <snoopytjp@gmail.com>
+# http://www.trevorsbench.com/meshchat-file-archive
+# Depends:
+#
+# Variables
+# $archive_file - File to log messages to
 
 my $archive_file = "/tmp/archive.log";
+
+####################
 
 my $file = $ARGV[0];
 

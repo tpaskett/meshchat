@@ -126,7 +126,8 @@ td:first-child {
 }
 
 progress {
-    margin-left: 25px;
+    color: #337ab7;
+    width: 100%;
 }
 
 #message {
@@ -257,6 +258,9 @@ button.button-primary:hover {
 
 .info {
     margin-top: 20px;
+}
+
+.updated {
     margin-bottom: 20px;
 }
 
@@ -272,8 +276,6 @@ button.button-primary:hover {
 #channels {
     vertical-align: top;
 }
-
-
 
 .panel {
     border-color: #337ab7;
@@ -294,9 +296,27 @@ button.button-primary:hover {
     padding: 15px;
 }
 
+.file-panel {
+    height: 90px;
+}
+
 button.button-primary {
     background-color: #337ab7;
     border-color: #337ab7;
+}
+
+input[type="submit"].button-primary {
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
+input[type="submit"].button-primary:hover {
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
+a {
+    color: #337ab7;
 }
 
 select {

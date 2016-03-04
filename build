@@ -3,6 +3,8 @@
 rm -rf data.tar.gz control.tar.gz *.ipk *.deb
 find . -name '*~' -delete
 rm src/shared/data/www/meshchat/db/messages
+rm -rf src/shared/data/www/meshchat/db/messages*
+rm -rf src/shared/data/www/meshchat/db/action*
 touch src/shared/data/www/meshchat/db/messages
 chmod 666 src/shared/data/www/meshchat/db/messages
 
@@ -32,6 +34,7 @@ cp www/cgi-bin/* ../../../tmp/usr/lib/cgi-bin/
 
 cd ../../pi/data	
 cp -R etc ../../../tmp/
+cp -R usr ../../../tmp/
 cp www/cgi-bin/* ../../../tmp/usr/lib/cgi-bin/
 
 cd ../../../tmp

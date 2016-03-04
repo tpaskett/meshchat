@@ -26,8 +26,9 @@ eval {
  
     alarm $timeout;
  
-    eval { 
-          $result = `$script $file`
+    eval {
+    	print "$script $file\n";
+        $result = `$script $file`;
     };
 
     alarm 0;
@@ -36,7 +37,7 @@ eval {
 alarm 0;
 
 if (${^CHILD_ERROR_NATIVE} != 0) {
-	action_error_log("Script error $script: $result");
+	action_error_log("Script exit error $script: $result");
 	# Don't exit so the error shows up in the action log
 }
 
@@ -46,7 +47,7 @@ open(FILE, "<$file");
 my $line = <FILE>;
 close(FILE);
 
-unlink($file);
+#unlink($file);
 
 get_lock();
 

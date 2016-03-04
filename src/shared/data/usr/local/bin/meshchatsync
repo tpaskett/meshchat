@@ -183,6 +183,7 @@ sub merge_messages {
     my %lmsg;
     my %done;
     my $num_rmsg = 0;
+    my @new_messages;
 
     dbg "merge_messages";
 
@@ -206,6 +207,7 @@ sub merge_messages {
     foreach my $rmsg_id ( keys %rmsg ) {
         if ( !exists $lmsg{$rmsg_id} ) {
             print MSG $rmsg{$rmsg_id};
+            push(@new_messages, $rmsg{$rmsg_id});
             $new_messages = 1;
         }
         else {
@@ -221,6 +223,13 @@ sub merge_messages {
     save_messages_db_version();
 
     release_lock();
+
+    dbg "process actions";
+
+    foreach my $msg (@new_messages) {
+        dbg "action: $msg";
+        process_message_action($msg);
+    }
 }
 
 sub merge_users {

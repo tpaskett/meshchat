@@ -19,42 +19,81 @@
                 </div>
             </nav>
             <div class="row info">
-                <div class="four columns" id="version">Mesh Chat v0.7b</div>
-                <div class="four columns center" id="node">Node: K7FPV</div>
-                <div class="four columns right" id="callsign">Call Sign: K7FPV</div>
+                <div class="tweleve columns center" id="version">
+                    <strong>
+                        Mesh Chat
+                    </strong>
+                </div>                
             </div>
             <div class="row">
-                <div class="tweleve columns">
-                    <form method="post" action="/cgi-bin/meshchat?action=upload_file" id="upload-form" enctype="multipart/form-data">
-                        <label for="file">Upload File</label>
-                        <input type="file" name="uploadfile" id="upload-file" value="">
-                        <input id="upload-button" class="button-primary" type="submit" value="Upload"><progress class="hidden"></progress>
-                    </form>
-
+                <div class="six columns center" id="zone">                    
+                </div>
+                <div class="six columns center" id="node">
+                </div>                
+            </div>
+            <div class="row updated">
+                <div class="six columns center" id="callsign">
+                </div>
+                <div class="six columns center" id="last-update">
+                    <strong>
+                        Updated:
+                    </strong>
+                    0 secs ago
+                </div>
+            </div>
+            <div class="row">
+                <div class="six columns">
+                    <div class="panel send-message-panel">
+                        <div class="panel-header">
+                            Upload a File
+                        </div>
+                        <div class="panel-body file-panel">
+                            <form method="post" action="/cgi-bin/meshchat?action=upload_file" id="upload-form" enctype="multipart/form-data">
+                                <label for="file">Upload File</label>
+                                <progress class="hidden"></progress><br/>
+                                <input type="file" name="uploadfile" id="upload-file" value="">
+                                <input id="upload-button" class="button-primary" type="submit" value="Upload">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="six columns">
+                    <div class="panel send-message-panel">
+                        <div class="panel-header">
+                            File System
+                        </div>
+                        <div class="panel-body file-panel">
+                            <div class="" id="total-bytes"></div>
+                            <div class="" id="free-bytes"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="row">
                 <div id="ohsnap"></div>
-            </div>
-            <div class="row">
-                <div class="six columns" id="total-bytes"></div>
-                <div class="six columns" id="free-bytes"></div>
-            </div>
+            </div>            
             <div class="row">
                 <div class="tweleve columns">
-                    <table class="u-full-width">
-                        <thead>
-                            <tr>
-                                <th>File</th>
-                                <th>Size</th>
-                                <th>Node</th>
-                                <th>Timestamp</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="files-table">
-                        </tbody>
-                    </table>
+                    <div class="panel send-message-panel">
+                        <div class="panel-header">
+                            Files Available
+                        </div>
+                        <div class="panel-body">
+                            <table class="u-full-width">
+                                <thead>
+                                    <tr>
+                                        <th>File</th>
+                                        <th>Size</th>
+                                        <th>Node</th>
+                                        <th>Timestamp</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="files-table">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="row">
@@ -63,9 +102,7 @@
                 </div>
             </div>
         </div>
-        <script src="zepto.min.js"></script>
-        <script src="fx.js"></script>
-        <script src="fx_methods.js"></script>
+        <script src="jquery-2.2.0.min.js"></script>
         <script src="ohsnap.js"></script>
         <script src="js.cookie.js"></script>
         <script src="numeral.min.js"></script>

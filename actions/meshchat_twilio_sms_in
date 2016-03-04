@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+#
+# Mesh Chat Twilio SMS incoming gateway
+# Version 1.0
+# License: MIT
+# Copyright K7FPV - Trevor Paskett <snoopytjp@gmail.com>
+# http://www.trevorsbench.com/meshchat-twilio-sms-gateway-incoming
+# Depends: apache2 curl
+#
+# Variables
+# $call_sign_numbers - Hash to map phone numbers to call signs. Must be in E.164 format ie +18015551234
+# $channel - Mesh Chat channel to post messages too. Set to '' for the Everything channel.
+
+my $call_sign_numbers = {
+    '+18015551234' => 'K7FPV',
+    '+18016661234' => 'K7FPV-2'
+};
+
+my $channel = 'SMS';
+
+####################
+
+$| = 1;
+
+my %query;
+
+parse_params();
+
+my $call_sign = 'NOCALL';
+
+if (exists $$call_sign_numbers{$query{From}}) {
+    $call_sign = $$call_sign_numbers{$query{From}};
+}
+
+my $epoch = time();
+
+# Send message to mesh chat
+
+my $result = `curl -s -S --data-urlencode "action=send_message" --data-urlencode "message=$query{Body}" --data-urlencode "call_sign=$call_sign" --data-urlencode "epoch=$epoch" --data-urlencode "channel=$channel" http://localhost/cgi-bin/meshchat`;
+
+#print STDERR $result;
+
+print "Content-type:text/plain\r\n\r\n";
+
+sub parse_params {
+    my $post_data;
+
+    if ( length( $ENV{'QUERY_STRING'} ) > 0 ) {
+        $post_data = $ENV{'QUERY_STRING'};
+    }
+    else {
+        foreach my $data (<STDIN>) {
+            $post_data .= $data;
+        }
+    }
+
+    if ( length($post_data) > 0 ) {
+        $buffer = $post_data;
+        @pairs = split( /&/, $buffer );
+        foreach $pair (@pairs) {
+            ( $name, $value ) = split( /=/, $pair );
+            $value =~ s/\+/ /g;
+            $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+            $query{$name} = $value;
+        }
+    }
+}

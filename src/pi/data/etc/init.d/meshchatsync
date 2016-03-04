@@ -17,7 +17,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin
 case "$1" in
   start)
     log_begin_msg "Starting meshchatsync"
-    /usr/local/bin/meshchatsync > /dev/null &
+    /usr/local/bin/meshchatsync > /dev/null 2>&1 &
     log_end_msg $?
     exit 0
     ;;

@@ -20,7 +20,7 @@ function epoch() {
 
 function monitor_last_update() {
     var secs = epoch() - last_messages_update;
-    $('#last-update').html('<strong>Updated</strong> ' + secs + ' seconds ago');
+    $('#last-update').html('<strong>Updated:</strong> ' + secs + ' seconds ago');
 }
 
 function start_chat() {
@@ -30,10 +30,10 @@ function start_chat() {
     monitor_last_update();
     setInterval(function() {
         load_messages()
-    }, 5000);
+    }, 15000);
     setInterval(function() {
         load_users()
-    }, 10000);
+    }, 15000);
     setInterval(function() {
         monitor_last_update()
     }, 2500);
@@ -62,6 +62,7 @@ function meshchat_init() {
 
         if ($('#new-channel').val() != '') {
             channel = $('#new-channel').val();
+            $('#send-channel').val('Everything');
         }
 
         $.ajax({
@@ -121,6 +122,7 @@ function meshchat_init() {
         Cookies.set('meshchat_call_sign', call_sign);
         $('#call-sign-container').addClass('hidden');
         $('#chat-container').removeClass('hidden');
+        $('#callsign').html('<strong>Call Sign:</strong> ' + Cookies.get('meshchat_call_sign'));
         start_chat();
     });    
     
@@ -181,6 +183,8 @@ function load_messages() {
 function process_messages() {
     var html = '';
 
+    var cur_send_channel = $("#send-channel").val();
+
     $('#send-channel')
     .find('option')
     .remove()
@@ -205,9 +209,9 @@ function process_messages() {
         row += '<td>' + messages[i].call_sign + '</td>';
         row += '<td>' + messages[i].channel + '</td>';
         if (messages[i].platform == 'node') {
-            row += '<td><a href="http://' + messages[i].node + ':8080">' + messages[i].node + '</a></td>';
+            row += '<td><a href="http://' + messages[i].node + ':8080" target="_blank">' + messages[i].node + '</a></td>';
         } else {
-            row += '<td>' + messages[i].node + '</td>';
+            row += '<td><a href="http://' + messages[i].node + '" target="_blank">' + messages[i].node + '</a></td>';
         }
         row += '</tr>';
 
@@ -254,7 +258,7 @@ function process_messages() {
     }
 
     $("#channels").val(channel_filter);
-    $("#send-channel").val(channel_filter);
+    $("#send-channel").val(cur_send_channel);
 }
 
 function load_users() {
@@ -286,9 +290,9 @@ function load_users() {
                     html += '<td><a href="' + data[i].id + '" onclick="start_video(\'' + data[i].id + '\');return false;">' + data[i].call_sign + '</td>';
                 }
                 if (data[i].platform == 'node') {
-                    html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+                    html += '<td><a href="http://' + data[i].node + ':8080" target="_blank">' + data[i].node + '</a></td>';
                 } else {
-                    html += '<td>' + data[i].node + '</td>';
+                    html += '<td><a href="http://' + data[i].node + '" target="_blank">' + data[i].node + '</a></td>';
                 }
                 html += '<td>' + format_date(date) + '</td>';
                 html += '</tr>';

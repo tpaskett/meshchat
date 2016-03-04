@@ -16,7 +16,7 @@ our $poll_interval              = 10;
 our $non_meshchat_poll_interval = 600;
 our $connect_timeout            = 5;
 our $platform                   = 'node';
-our $debug                      = 1;
+our $debug                      = 0;
 our $extra_nodes                = [];
 
 1;

@@ -19,22 +19,47 @@
                 </div>
             </nav>
             <div class="row info">
-                <div class="four columns" id="version">Mesh Chat v0.7b</div>
-                <div class="four columns center" id="node">Node: K7FPV</div>
-                <div class="four columns right" id="callsign">Call Sign: K7FPV</div>
+                <div class="tweleve columns center" id="version">
+                    <strong>
+                        Mesh Chat
+                    </strong>
+                </div>                
+            </div>
+            <div class="row">
+                <div class="six columns center" id="zone">                    
+                </div>
+                <div class="six columns center" id="node">
+                </div>                
+            </div>
+            <div class="row updated">
+                <div class="six columns center" id="callsign">
+                </div>
+                <div class="six columns center" id="last-update">
+                    <strong>
+                        Updated:
+                    </strong>
+                    0 secs ago
+                </div>
             </div>
             <div class="row">
                 <div class="tweleve columns">
-                    <table class="u-full-width">
-                        <thead>
-                            <tr>
-                                <th>Node</th>
-                                <th>Last Sync</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sync-table">
-                        </tbody>
-                    </table>
+                    <div class="panel">
+                        <div class="panel-header">
+                            Node Sync Status
+                        </div>
+                        <div class="panel-body">
+                            <table class="u-full-width">
+                                <thead>
+                                    <tr>
+                                        <th>Node</th>
+                                        <th>Last Sync</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sync-table">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="row">
@@ -43,9 +68,7 @@
                 </div>
             </div>
         </div>
-        <script src="zepto.min.js"></script>
-        <script src="fx.js"></script>
-        <script src="fx_methods.js"></script>
+        <script src="jquery-2.2.0.min.js"></script>
         <script src="ohsnap.js"></script>
         <script src="js.cookie.js"></script>
         <script src="status.js"></script>

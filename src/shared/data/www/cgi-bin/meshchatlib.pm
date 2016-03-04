@@ -4,6 +4,8 @@ use meshchatconfig;
 
 our $version = '0.7b1';
 
+$messages_db_file = $messages_db_file . '.' . zone_name();
+
 sub dbg {
     my $txt = shift;
 
@@ -190,7 +192,11 @@ sub pi_node_list {
 
     my $local_node = node_name();
 
-    my @output = `curl --retry 0 --connect-timeout $connect_timeout http://localnode.local.mesh:8080/cgi-bin/meshchat\\?action=meshchat_nodes 2> /dev/null`;
+    my $zone_name = zone_name();
+
+    dbg "ZONE: $zone_name";
+
+    my @output = `curl --retry 0 --connect-timeout $connect_timeout "http://$local_meshchat_node:8080/cgi-bin/meshchat?action=meshchat_nodes&zone_name=$zone_name" 2> /dev/null`;
 
     my $nodes = [];
 
@@ -209,14 +215,42 @@ sub pi_node_list {
     return $nodes;
 }
 
+sub zone_name {
+    if ( $platform eq 'node' ) {
+        return node_zone_name();
+    } else {
+        return pi_zone_name();
+    }
+}
+
+sub node_zone_name {
+    my $service = `grep ":8080/meshchat|" /var/run/services_olsr | grep "my own"`;
+
+    if ($service =~ /\|tcp\|(.*?)\t/) {
+        return $1;
+    } else {
+        return "MeshChat";
+    }
+}
+
+sub pi_zone_name {
+    return $pi_zone;
+}
+
 sub mesh_node_list {
     dbg "mesh_node_list";
 
     my $local_node = node_name();
 
+    my $zone_name = zone_name();
+
+    dbg "ZONE: $zone_name";
+
+    $zone_name .= '[[:space:]]';
+
     my $nodes = [];
 
-    foreach (`grep -i "/meshchat|" /var/run/services_olsr`) {
+    foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep -e '|$zone_name'`) {
         chomp;
         if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
             if (lc($local_node) eq lc($1)) { next; }
@@ -286,6 +320,15 @@ sub hash {
     $hash = substr( $hash, 0, 8 );
 
     return $hash;
+}
+
+sub unpack_message {
+    my $message = shift;
+
+    $message =~ s/\\n/\n/g;
+    $message =~ s/\\"/\"/g;
+
+    return $message;
 }
 
 sub trim_db {
