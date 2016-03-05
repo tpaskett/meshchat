@@ -1,9 +1,17 @@
+var last_update = epoch();
 var free_space = 0;
+
+function monitor_last_update() {
+    var secs = epoch() - last_update;
+    $('#last-update').html('<strong>Updated:</strong> ' + secs + ' seconds ago');
+}
+
 $(function() {
     load_files();
     setInterval(function() {
         load_files()
     }, 30000);
+    setInterval(function() { monitor_last_update() }, 2500);
     var file = null;
     $('#upload-file').on("change", function(event) {
         file = event.target.files[0];
@@ -107,5 +115,7 @@ function load_files() {
                 }
             });
         });
+
+        last_update = epoch();
     });
 }

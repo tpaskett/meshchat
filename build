@@ -19,7 +19,7 @@ cd ../control
 tar cfz ../../../control.tar.gz .
 cd ../../..
 gzip data.tar
-COPYFILE_DISABLE=1 tar cfz meshchat_0.7b1_all.ipk control.tar.gz data.tar.gz debian-binary
+COPYFILE_DISABLE=1 tar cfz meshchat_0.7b2_all.ipk control.tar.gz data.tar.gz debian-binary
 
 ### Build pi package
 rm -rf data.tar.gz control.tar.gz
@@ -43,5 +43,5 @@ tar cfz ../data.tar.gz `find . -type f`
 cd ../src/pi/control
 tar cfz ../../../control.tar.gz .
 cd ../../..
-COPYFILE_DISABLE=1 ar r meshchat_0.7b1_all.deb debian-binary control.tar.gz data.tar.gz
+COPYFILE_DISABLE=1 ar r meshchat_0.7b2_all.deb debian-binary control.tar.gz data.tar.gz
 rm -rf tmp

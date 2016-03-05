@@ -6,6 +6,7 @@ our $lock_file                  = $meshchat_path . '/lock';
 our $messages_db_file           = '/var/www/html/meshchat/db/messages';
 our $action_log_file            = '/var/www/html/meshchat/db/action.log';
 our $action_error_log_file      = '/var/www/html/meshchat/db/action_error.log';
+our $action_messages_log_file   = '/var/www/html/meshchat/db/action_messages.log';
 our $sync_status_file           = $meshchat_path . '/sync_status';
 our $local_users_status_file    = $meshchat_path . '/users_local';
 our $remote_users_status_file   = $meshchat_path . '/users_remote';

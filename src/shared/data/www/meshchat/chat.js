@@ -14,10 +14,6 @@ $(function() {
     meshchat_init();
 });
 
-function epoch() {
-    return Math.floor(new Date() / 1000);
-}
-
 function monitor_last_update() {
     var secs = epoch() - last_messages_update;
     $('#last-update').html('<strong>Updated:</strong> ' + secs + ' seconds ago');

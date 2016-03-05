@@ -15,6 +15,10 @@ $(function() {
     });
 });
 
+function epoch() {
+    return Math.floor(new Date() / 1000);
+}
+
 function format_date(date) {
     var string;
     

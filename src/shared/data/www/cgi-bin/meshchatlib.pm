@@ -2,9 +2,13 @@ BEGIN { push @INC, '/www/cgi-bin', '/usr/lib/cgi-bin' }
 
 use meshchatconfig;
 
-our $version = '0.7b1';
+our $version = '0.7b2';
 
 $messages_db_file = $messages_db_file . '.' . zone_name();
+
+if ($platform eq 'node' && -d '/mnt/usb/meshchat') {
+    $local_files_dir = '/mnt/usb/meshchat';
+}
 
 sub dbg {
     my $txt = shift;
@@ -206,9 +210,9 @@ sub pi_node_list {
         if (lc($local_node) eq lc($node)) { next; }
 
         if ($port == 8080) {
-            push( @$nodes, { platform => 'node', node => $node } );
+            push( @$nodes, { platform => 'node', node => lc($node) } );
         } else {
-            push( @$nodes, { platform => 'pi', node => $node } );
+            push( @$nodes, { platform => 'pi', node => lc($node) } );
         }
     }
 
@@ -246,11 +250,9 @@ sub mesh_node_list {
 
     dbg "ZONE: $zone_name";
 
-    $zone_name .= '[[:space:]]';
-
     my $nodes = [];
 
-    foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep -e '|$zone_name'`) {
+    foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep \$'|$zone_name\t'`) {
         chomp;
         if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
             if (lc($local_node) eq lc($1)) { next; }
@@ -297,8 +299,11 @@ sub process_message_action {
 sub action_error_log {
     my $text = shift;
 
+    use POSIX;
+
     open(LOG, ">>$action_error_log_file");
-    print LOG "$text\n";
+    print LOG strftime("%F %T", localtime $^T);
+    print LOG "\t$text\n";
     close(LOG);    
 }
 

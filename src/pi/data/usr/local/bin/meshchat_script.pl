@@ -53,8 +53,10 @@ get_lock();
 
 open(LOG, ">>$action_log_file");
 
+chomp $result;
+
 dbg "$script\t$match\t$result";
-print LOG time() . "\t$script\t$match\t$result\x1e" . $line;
+print LOG time() . "\t$script\t$match\t$result\t" . $line;
 
 close(LOG);
 

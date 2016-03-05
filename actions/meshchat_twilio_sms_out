@@ -37,6 +37,8 @@ close(FILE);
 
 my ($id, $epoch, $message, $call_sign, $node, $platform, $channel) = split(/\t/, $line);
 
+#$message =~ s/\'/\\'/g;
+
 foreach my $number (@phone_numbers) {
 	my $result = `curl -s -S -X POST 'https://api.twilio.com/2010-04-01/Accounts/$account_sid/Messages.json' --data-urlencode 'To=$number' --data-urlencode 'From=$twilio_number' --data-urlencode 'Body=$call_sign: $message' -u $account_sid:$auth_token 2> $error_log`;
 

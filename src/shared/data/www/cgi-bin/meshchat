@@ -6,6 +6,8 @@ use meshchatconfig;
 
 $| = 1;
 
+my $start_time = time();
+
 my %query;
 
 my $node = node_name();
@@ -66,9 +68,14 @@ elsif ( $query{action} eq 'upload_file' ) {
 elsif ( $query{action} eq 'meshchat_nodes' ) {
     meshchat_nodes();
 }
+elsif ( $query{action} eq 'action_log' ) {
+    action_log();
+}
 else {
     error('error no action');
 }
+
+print STDERR "$query{action} took " . (time() - $start_time) . " secs\n";
 
 sub parse_params {
     my $post_data;
@@ -765,14 +772,75 @@ sub meshchat_nodes {
 
     dbg "ZONE: $zone_name";
 
-    $zone_name .= '[[:space:]]';
-
-    foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep -e '$zone_name'`) {
+    foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep \$'|$zone_name\t'`) {
         chomp;
         if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
             print "$1\t$2\n";
         }
     }
+}
+
+sub action_log {
+    print "Content-type:application/json\r\n\r\n";
+
+    my $lines = [];
+
+    get_lock();
+
+    open( LOG, $action_log_file );
+    while (<LOG>) {
+        my $line = $_;
+        chomp($line);
+
+        my ($action_epoch, $script, $match, $result, $id, $msg_epoch, $message, $call_sign, $node, $platform, $channel) = split(/\t/, $line);
+
+        push(
+            @$lines,
+            {
+                action_epoch  => $action_epoch,
+                script  => $script,
+                match  => $match,
+                result  => $result,
+                id  => $id,
+                msg_epoch  => $msg_epoch,
+                message  => $message,
+                call_sign  => $call_sign,
+                node  => $node,
+                platform  => $platform,
+                channel  => $channel
+            }
+        );
+    }
+
+    close(LOG);    
+
+    release_lock();
+
+    my @sorted = sort { $b->{action_epoch} <=> $a->{action_epoch} } @$lines;
+
+    my $json = '[';
+
+    foreach my $line (@sorted) {
+        $json .= '{';
+        foreach my $key (keys %$line) {
+            #if ($line->{$key} =~ /[0-9]+/) {
+            #    $json .= '"' . $key . '":' . $line->{$key} . ',';
+            #} else {
+                $json .= '"' . $key . '":"' . $line->{$key} . '",';
+            #}
+        }
+
+        chop($json);
+        $json .= '},';
+    }
+
+    if ( length($json) > 1 ) {
+        chop($json);
+    }
+
+    $json .= ']';
+
+    print $json;
 }
 
 sub to_dotquad {

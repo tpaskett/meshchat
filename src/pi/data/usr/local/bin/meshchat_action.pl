@@ -21,6 +21,7 @@ while(<ACTIONS>) {
     chomp;
 
     if ($_ =~ /^#/) { next; }
+    if ($_ eq '') { next; }
         
     my ($channel, $hashtag, $script, $timeout) = split(/\:/, $_);
 
@@ -54,9 +55,13 @@ chomp($line);
 
 my ($id, $epoch, $message, $call_sign, $node, $platform, $channel) = split(/\t/, $line);
 
-use Data::Dumper;
+# Check if we have ran actions on this message id already
+my $result = `grep -P '^$id\$' $action_messages_log_file`;
 
-print Dumper $actions;
+if ($result ne '') {
+    action_error_log("Already processed message id: $id");
+    exit();
+}
 
 my $log_file = '/tmp/ms.log';
 
@@ -81,3 +86,10 @@ foreach my $action (@$actions) {
 }
 
 unlink($file);
+
+# Log the message id so we don't repeat actions on messages already processed.
+# This could happen on new installs, or if the db was deleted the re-sync'd
+
+open(LOG, ">>$action_messages_log_file");
+print LOG "$id\n";
+close(LOG);

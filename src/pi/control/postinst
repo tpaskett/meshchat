@@ -5,9 +5,12 @@ service apache2 restart > /dev/null 2>&1
 
 update-rc.d meshchatsync defaults 99
 
+APACHE_USER=$(ps aux | egrep '(apache|httpd)' | grep -v root | head -n 1 | awk '{print $1}')
+
 mkdir -p /var/www/html/meshchat/files
 
-chown -R www-data:www-data /var/www/html/meshchat
+chown -R $APACHE_USER:$APACHE_USER /var/www/html/meshchat
+chown $APACHE_USER:$APACHE_USER /usr/lib/cgi-bin/meshchat*
 
 ln -s /var/www/html/meshchat /var/www/meshchat
 
