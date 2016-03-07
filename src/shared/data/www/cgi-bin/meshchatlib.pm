@@ -2,12 +2,12 @@ BEGIN { push @INC, '/www/cgi-bin', '/usr/lib/cgi-bin' }
 
 use meshchatconfig;
 
-our $version = '0.7b2';
+our $version = '0.7b3';
 
 $messages_db_file = $messages_db_file . '.' . zone_name();
 
-if ($platform eq 'node' && -d '/mnt/usb/meshchat') {
-    $local_files_dir = '/mnt/usb/meshchat';
+if ( $platform eq 'node' && -d '/mnt/usb/meshchat/files' ) {
+    $local_files_dir = '/mnt/usb/meshchat/files';
 }
 
 sub dbg {
@@ -15,6 +15,10 @@ sub dbg {
 
     if ( $debug == 1 ) { print STDERR "$txt\n"; }
 }
+
+# flock based locking. We always lock with this before we read or
+# write to any files to prevent things from stomping on each other
+# A lot of things are in flight at a given time so this is crucial
 
 sub get_lock {
     open( $lock_fh, '<' . $lock_file );
@@ -27,6 +31,13 @@ sub get_lock {
         die('could not get lock');
     }
 }
+
+sub release_lock {
+    close($lock_fh);
+}
+
+# Get the name on the local node. For Raspberry Pi we use the hostname.
+# For AREDN nodes we get the config node name
 
 sub node_name {
     if ( $platform eq 'node' ) {
@@ -48,14 +59,13 @@ sub node_name {
     }
 }
 
-sub release_lock {
-    close($lock_fh);
-}
+# Returns a md5 of a file. This is added to the HTTP response header
+# so the client and validiate the file integrity
 
 sub file_md5 {
     my $file = shift;
 
-    if (!-e $file) { return ''; }
+    if ( !-e $file ) { return ''; }
 
     my $output = `md5sum $file`;
 
@@ -70,6 +80,8 @@ sub file_md5 {
     return $parts[0];
 }
 
+# Returns the size of a file
+
 sub file_size {
     my $file = shift;
 
@@ -78,6 +90,8 @@ sub file_size {
     return $stats[7];
 }
 
+# Returns the file time stamp as epoch
+
 sub file_epoch {
     my $file = shift;
 
@@ -85,6 +99,8 @@ sub file_epoch {
 
     return $stats[9];
 }
+
+# Returns the cache version of the message db
 
 sub get_messages_db_version {
     open( VER, $messages_version_file );
@@ -95,6 +111,8 @@ sub get_messages_db_version {
     return $ver;
 }
 
+# Calculate and save the message db version
+
 sub save_messages_db_version {
     open( VER, '>' . $messages_version_file );
     print VER messages_db_version() . "\n";
@@ -102,6 +120,9 @@ sub save_messages_db_version {
 
     chmod( 0666, $messages_version_file );
 }
+
+# Calculate the message db by converting the message id from hex to
+# decimnal and adding all the ids together
 
 sub messages_db_version {
     my $sum = 0;
@@ -121,6 +142,9 @@ sub messages_db_version {
 
     return $sum;
 }
+
+# Returns the free, available, total, etc stats of the filesystem the
+# file sharing folder is located on
 
 sub file_storage_stats {
 
@@ -157,7 +181,7 @@ sub file_storage_stats {
         release_lock();
     }
 
-    if (($max_file_storage - $local_files_bytes) < 0) {
+    if ( ( $max_file_storage - $local_files_bytes ) < 0 ) {
         $local_files_bytes = $max_file_storage;
     }
 
@@ -170,6 +194,9 @@ sub file_storage_stats {
     };
 }
 
+# Return a list of nodes that should be polled for new messages. AREDN nodes
+# and Raspberry Pi have their own functions.
+
 sub node_list {
     my $nodes;
 
@@ -180,7 +207,7 @@ sub node_list {
         $nodes = pi_node_list();
     }
 
-    push( @$nodes, @$extra_nodes );    
+    push( @$nodes, @$extra_nodes );
 
     foreach my $node (@$nodes) {
         dbg "$$node{platform} $$node{node} $$node{port}\n";
@@ -191,8 +218,12 @@ sub node_list {
     return $nodes;
 }
 
+# Returns a list of nodes to poll for Raspberry Pi. We get list of nodes via HTTP
+# to an AREDN node that has mesh chat installed. We need to do it this way as there
+# is no external API right now to get the service list from OLSR off node
+
 sub pi_node_list {
-    dbg "pi_node_list";    
+    dbg "pi_node_list";
 
     my $local_node = node_name();
 
@@ -205,13 +236,14 @@ sub pi_node_list {
     my $nodes = [];
 
     foreach my $line (@output) {
-        my ($node, $port) = split("\t", $line);
+        my ( $node, $port ) = split( "\t", $line );
 
-        if (lc($local_node) eq lc($node)) { next; }
+        if ( lc($local_node) eq lc($node) ) { next; }
 
-        if ($port == 8080) {
+        if ( $port == 8080 ) {
             push( @$nodes, { platform => 'node', node => lc($node) } );
-        } else {
+        }
+        else {
             push( @$nodes, { platform => 'pi', node => lc($node) } );
         }
     }
@@ -219,27 +251,8 @@ sub pi_node_list {
     return $nodes;
 }
 
-sub zone_name {
-    if ( $platform eq 'node' ) {
-        return node_zone_name();
-    } else {
-        return pi_zone_name();
-    }
-}
-
-sub node_zone_name {
-    my $service = `grep ":8080/meshchat|" /var/run/services_olsr | grep "my own"`;
-
-    if ($service =~ /\|tcp\|(.*?)\t/) {
-        return $1;
-    } else {
-        return "MeshChat";
-    }
-}
-
-sub pi_zone_name {
-    return $pi_zone;
-}
+# Returns the node list to poll by parsing the OLSR services and finding nodes that
+# have the same zone name as this node
 
 sub mesh_node_list {
     dbg "mesh_node_list";
@@ -254,12 +267,13 @@ sub mesh_node_list {
 
     foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep \$'|$zone_name\t'`) {
         chomp;
-        if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
-            if (lc($local_node) eq lc($1)) { next; }
+        if ( $_ =~ /^http:\/\/(.*)\:(\d+)\// ) {
+            if ( lc($local_node) eq lc($1) ) { next; }
 
-            if ($2 == 8080) {
+            if ( $2 == 8080 ) {
                 push( @$nodes, { platform => 'node', node => lc($1), port => $2 } );
-            } else {
+            }
+            else {
                 push( @$nodes, { platform => 'pi', node => lc($1), port => $2 } );
             }
         }
@@ -268,6 +282,41 @@ sub mesh_node_list {
     return $nodes;
 }
 
+# Returns the zone that this nodes belongs too. Seperate functions for AREDN and Pi.
+
+sub zone_name {
+    if ( $platform eq 'node' ) {
+        return node_zone_name();
+    }
+    else {
+        return pi_zone_name();
+    }
+}
+
+# Get the AREDN zone by looking for the service name given to mesh chat on the local node
+
+sub node_zone_name {
+    my $service = `grep ":8080/meshchat|" /var/run/services_olsr | grep "my own"`;
+
+    if ( $service =~ /\|tcp\|(.*?)\t/ ) {
+        return $1;
+    }
+    else {
+        return "MeshChat";
+    }
+}
+
+# Returns the zone configured in meshchatconfig.pm
+
+sub pi_zone_name {
+    return $pi_zone;
+}
+
+# Process the action scripts for a new message either from the UI or from polling
+# Action scripts are ran asyncronously. meshchat_action.pl reads /etc/meshchat_actions.conf
+# and loops over that config file to find any matches. If a match is found then
+# meshchat_script.pl will execute the script with a timeout and log the results
+
 sub process_message_action {
     my $line = shift;
 
@@ -275,11 +324,11 @@ sub process_message_action {
 
     if ( $platform ne 'pi' ) { return; }
 
-    if (!-e $action_conf_file) { return; }
+    if ( !-e $action_conf_file ) { return; }
 
     chomp($line);
 
-    my ($id, $epoch, $message, $call_sign, $node, $platform, $channel) = split(/\t/, $line);
+    my ( $id, $epoch, $message, $call_sign, $node, $platform, $channel ) = split( /\t/, $line );
 
     $message = unpack_message($message);
 
@@ -287,7 +336,7 @@ sub process_message_action {
 
     dbg "action file: $action_file\n";
 
-    open(FILE, ">$action_file");
+    open( FILE, ">$action_file" );
     print FILE "$id\t$epoch\t$message\t$call_sign\t$node\t$platform\t$channel\n";
     close(FILE);
 
@@ -296,16 +345,20 @@ sub process_message_action {
     `perl /usr/local/bin/meshchat_action.pl $action_file > /tmp/ma.log 2>&1 &`;
 }
 
+# Save a error message when processing an action script to the log file.
+
 sub action_error_log {
     my $text = shift;
 
-    use POSIX;
+    require POSIX;
 
-    open(LOG, ">>$action_error_log_file");
-    print LOG strftime("%F %T", localtime $^T);
+    open( LOG, ">>$action_error_log_file" );
+    print LOG strftime( "%F %T", localtime $^T );
     print LOG "\t$text\n";
-    close(LOG);    
+    close(LOG);
 }
+
+# Returns a random 8 hex character hash. This is used for messages ids in the db
 
 sub hash {
     my $string = time() . int( rand(99999) );
@@ -327,6 +380,8 @@ sub hash {
     return $hash;
 }
 
+# Unpack a message from the message db.
+
 sub unpack_message {
     my $message = shift;
 
@@ -335,6 +390,9 @@ sub unpack_message {
 
     return $message;
 }
+
+# Trim the message db by removing the oldest messages first to be at the
+# allowed message count
 
 sub trim_db {
     get_lock();
@@ -345,12 +403,12 @@ sub trim_db {
 
     # Get a count of the lines
     open( MSG, $messages_db_file );
-    while(<MSG>) {
+    while (<MSG>) {
         $line_count++;
     }
     close(MSG);
 
-    if ($line_count <= $max_messages_db_size) {
+    if ( $line_count <= $max_messages_db_size ) {
         dbg "nothing to trim $line_count";
         return;
     }
@@ -364,11 +422,11 @@ sub trim_db {
     open( OLD, $messages_db_file );
 
     while (<OLD>) {
-        my $line = $_;        
+        my $line = $_;
 
         if ( $line_count > $lines_to_trim ) {
             print NEW $line;
-        }        
+        }
 
         $line_count++;
     }
@@ -380,7 +438,7 @@ sub trim_db {
 
     unlink($messages_db_file);
     `cp $meshchat_path/shrink_messages $messages_db_file`;
-    unlink( $meshchat_path . '/shrink_messages' );    
+    unlink( $meshchat_path . '/shrink_messages' );
 
     release_lock();
 }
@@ -418,23 +476,23 @@ sub sort_db {
     open( MSG, $messages_db_file );
     while (<MSG>) {
         my $line = $_;
+
         #chomp($line);
 
         my @parts = split( "\t", $line );
 
         my $msg = {
             epoch => $parts[1],
-            id => hex($parts[0]),
-            line => $line
+            id    => hex( $parts[0] ),
+            line  => $line
         };
 
-        push(@$messages, $msg)        
+        push( @$messages, $msg );
     }
     close(MSG);
 
-    @$messages = sort { $a->{epoch} <=> $b->{epoch}    or 
-                        $a->{id}    <=> $b->{id} 
-                      } @$messages;
+    @$messages =
+      sort { $a->{epoch} <=> $b->{epoch} or $a->{id} <=> $b->{id} } @$messages;
 
     open( MSG, ">$messages_db_file" );
     foreach my $msg (@$messages) {

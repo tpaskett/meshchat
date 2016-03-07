@@ -66,6 +66,7 @@ function meshchat_init() {
             type: "POST",
             tryCount : 0,
             retryLimit : 3,
+            cache: false,
             data:
             {
                 action: 'send_message',
@@ -139,6 +140,12 @@ function meshchat_init() {
         }
     });
 
+    $('#message').keydown(function (e) {
+        if ((event.keyCode == 10 || event.keyCode == 13) && event.ctrlKey) {
+            $("#submit-message").trigger( "click" );
+        }
+    });
+
     var cookie_call_sign = Cookies.get('meshchat_call_sign');
     if (cookie_call_sign == undefined) {
         $('#call-sign-container').removeClass('hidden');
@@ -160,6 +167,7 @@ function load_messages() {
         type: "GET",
         dataType: "json",
         context: this,
+        cache: false,
         success: function(data, textStatus, jqXHR)
         {            
             if (data == null) return;
@@ -267,6 +275,7 @@ function load_users() {
         type: "GET",
         dataType: "json",
         context: this,
+        cache: false,
         success: function(data, textStatus, jqXHR)
         {
             var html = '';

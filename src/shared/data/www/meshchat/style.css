@@ -275,6 +275,7 @@ button.button-primary:hover {
 
 #channels {
     vertical-align: top;
+    margin-top: -5px;
 }
 
 .panel {
@@ -320,7 +321,7 @@ a {
 }
 
 select {
-    height: 30px;
+    height: 35px;
 }
 
 .users-panel {
