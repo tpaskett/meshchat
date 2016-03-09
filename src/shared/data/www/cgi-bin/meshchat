@@ -75,7 +75,7 @@ else {
     error('error no action');
 }
 
-print STDERR "$query{action} took " . (time() - $start_time) . " secs\n";
+#print STDERR "$query{action} took " . (time() - $start_time) . " secs\n";
 
 sub parse_params {
     my $post_data;
@@ -136,6 +136,7 @@ sub messages {
             push(
                 @$messages,
                 {
+                    id        => $parts[0],
                     epoch     => $parts[1],
                     message   => unpack_message( $parts[2] ),
                     call_sign => $parts[3],
@@ -193,7 +194,7 @@ sub messages {
     foreach my $message (@sorted) {
         $message->{message} =~ s/\n/\\n/g;
         $message->{message} =~ s/\"/\\"/g;
-        $json .= '{"epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '","channel":"' . $message->{channel} . '"},';
+        $json .= '{"id":"' . $message->{id} . '","epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '","channel":"' . $message->{channel} . '"},';
     }
 
     if ( length($json) > 1 ) {

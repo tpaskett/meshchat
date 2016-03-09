@@ -8,8 +8,9 @@ var messages_updating = false;
 var users_updating = false;
 var messages = [];
 var channel_filter = '';
-// Compatibility shim
-navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+var messages_version = 0;
+var alert = new Audio('alert.mp3');
+
 $(function() {
     meshchat_init();
 });
@@ -201,6 +202,8 @@ function process_messages() {
 
     var channels = {};
 
+    var total = 0;
+
     for (var i = 0; i < messages.length; i++) {
         var row = '';        
         var date = new Date(0);
@@ -211,11 +214,11 @@ function process_messages() {
         row += '<td>' + format_date(date) + '</td>';
         row += '<td>' + message + '</td>';
         row += '<td>' + messages[i].call_sign + '</td>';
-        row += '<td>' + messages[i].channel + '</td>';
+        row += '<td class="col_channel">' + messages[i].channel + '</td>';
         if (messages[i].platform == 'node') {
-            row += '<td><a href="http://' + messages[i].node + ':8080" target="_blank">' + messages[i].node + '</a></td>';
+            row += '<td class="col_node"><a href="http://' + messages[i].node + ':8080" target="_blank">' + messages[i].node + '</a></td>';
         } else {
-            row += '<td><a href="http://' + messages[i].node + '" target="_blank">' + messages[i].node + '</a></td>';
+            row += '<td class="col_node"><a href="http://' + messages[i].node + '" target="_blank">' + messages[i].node + '</a></td>';
         }
         row += '</tr>';
 
@@ -228,7 +231,18 @@ function process_messages() {
         } else {
             html += row;
         }
+
+        var id = parseInt(messages[i].id, 16);
+        total += id;
     }
+
+    if (messages_version != 0) {
+        if (total != messages_version) {            
+            alert.play();
+        }
+    }
+
+    messages_version = total;        
 
     $('#message-table').html(html);           
 

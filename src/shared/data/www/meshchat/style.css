@@ -246,6 +246,22 @@ button.button-primary:hover {
 	.message td,
 	.remote td{ word-wrap: break-word; }
 	td:first-child{ white-space: normal; }
+    body {
+        font-size: 1.3em;
+    }    
+}
+
+@media (max-width: 460px) {
+    th.col_node, td.col_node, th.col_channel, td.col_channel {
+        display:none;
+        width:0;
+        height:0;
+        opacity:0;
+        visibility: collapse;       
+    } 
+    #message-parent-table {
+        table-layout: auto;
+    }    
 }
 
 .center {
@@ -298,12 +314,20 @@ button.button-primary:hover {
 }
 
 .file-panel {
-    height: 90px;
+    height: 110px;
+}
+
+#files-parent-table {
+    table-layout: fixed;
 }
 
 button.button-primary {
     background-color: #337ab7;
     border-color: #337ab7;
+}
+
+button, .button {
+    margin-bottom: 0px;
 }
 
 input[type="submit"].button-primary {
@@ -325,12 +349,12 @@ select {
 }
 
 .users-panel {
-    height: 400px;
+    height: 430px;
     overflow: hidden;
 }
 
 .send-message-panel {
-    max-height: 400px;
+    height: 430px;
 }
 
 .users-panel-body {

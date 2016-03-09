@@ -21,6 +21,10 @@ sub dbg {
 # A lot of things are in flight at a given time so this is crucial
 
 sub get_lock {
+    if (!-e $lock_file) {
+        `touch $lock_file`;
+    }
+
     open( $lock_fh, '<' . $lock_file );
 
     if ( flock( $lock_fh, 2 ) ) {
@@ -33,6 +37,7 @@ sub get_lock {
 }
 
 sub release_lock {
+    #flock( $lock_fh, LOCK_UN );
     close($lock_fh);
 }
 
