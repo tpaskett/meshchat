@@ -443,6 +443,7 @@ sub trim_db {
 
     unlink($messages_db_file);
     `cp $meshchat_path/shrink_messages $messages_db_file`;
+    chmod( 0666, $messages_db_file );
     unlink( $meshchat_path . '/shrink_messages' );
 
     release_lock();

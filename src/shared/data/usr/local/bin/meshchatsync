@@ -22,6 +22,11 @@ if (!-e $lock_file) {
     `touch $lock_file`;
 }
 
+if (!-e $messages_db_file) {
+    `touch $messages_db_file`;
+    chmod( 0666, $messages_db_file );
+}
+
 save_messages_db_version();
 
 chmod( 0777, $meshchat_path );

@@ -4,8 +4,8 @@
 # Version 1.0
 # License: MIT
 # Copyright K7FPV - Trevor Paskett <snoopytjp@gmail.com>
-# http://www.trevorsbench.com/meshchat-twilio-sms-gateway-outgoing
-# Depends: libjson-perl curl
+# http://www.trevorsbench.com/meshchat-twilio-sms-gateway-outgoing/
+# Depends: perl libjson-perl curl
 #
 # Variables
 # $account_sid - Account SID from your Twilio account

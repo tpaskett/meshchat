@@ -4,8 +4,8 @@
 # Version 1.0
 # License: MIT
 # Copyright K7FPV - Trevor Paskett <snoopytjp@gmail.com>
-# http://www.trevorsbench.com/meshchat-file-archive
-# Depends:
+# http://www.trevorsbench.com/meshchat-message-archive/
+# Depends: perl
 #
 # Variables
 # $archive_file - File to log messages to

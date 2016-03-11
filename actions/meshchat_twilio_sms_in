@@ -4,8 +4,8 @@
 # Version 1.0
 # License: MIT
 # Copyright K7FPV - Trevor Paskett <snoopytjp@gmail.com>
-# http://www.trevorsbench.com/meshchat-twilio-sms-gateway-incoming
-# Depends: apache2 curl
+# http://www.trevorsbench.com/meshchat-twilio-sms-gateway-incoming/
+# Depends: perl apache2 curl
 #
 # Variables
 # $call_sign_numbers - Hash to map phone numbers to call signs. Must be in E.164 format ie +18015551234
