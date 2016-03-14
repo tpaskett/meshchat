@@ -326,7 +326,7 @@ select {
 
 .users-panel-body {
     overflow-y: auto;
-    max-height: 320px;
+    max-height: 160px;
 }
 
 #new-message-label {
@@ -385,6 +385,14 @@ form {
     .send-message-panel {
         height: 260px;
     } 
+
+    .users-panel-body {
+        max-height: 200px;
+    } 
+
+    .delete-button {
+        display: none;
+    }
 }
 
 @media (max-width: 820px) {
@@ -395,6 +403,7 @@ form {
 }
 @media (max-width: 767px) {
     th, td{ padding-right: 4px; padding-left: 4px; }
+    /*
     .remote,
     .message{ table-layout: fixed; }
     .message td:nth-child(1),
@@ -414,6 +423,7 @@ form {
     .message td,
     .remote td{ word-wrap: break-word; }
     td:first-child{ white-space: normal; }
+    */
     body {
         font-size: 1.3em;
     }   
@@ -422,11 +432,16 @@ form {
         height: 260px;    
     }
 
+    .users-panel-body {
+        max-height: 200px;
+    }  
+
     .send-message-panel {
         height: 260px;
     } 
 }
 
+/*
 @media (max-width: 550px) {
     .users-panel {
         height: 220px;    
@@ -436,23 +451,38 @@ form {
         height: 220px;
     } 
 }
+*/
 
 @media (max-width: 600px) {
     #search-span {
         display: none;
     }
+
+    #files-parent-table {
+        font-size: 1.0em;
+    } 
+
+    #files-parent-table td:first-child {
+        width: 80%;  
+    }
 }
 
 @media (max-width: 460px) {
-    th.col_node, td.col_node, th.col_channel, td.col_channel {
+    th.col_node, td.col_node, th.col_channel, td.col_channel, th.col_time, td.col_time {
         display:none;
         width:0;
         height:0;
         opacity:0;
         visibility: collapse;       
     } 
+
     #message-parent-table {
         table-layout: auto;
+    }
+
+    #files-parent-table {
+        table-layout: auto;
+        font-size: 1.0em;
     }    
 }
 

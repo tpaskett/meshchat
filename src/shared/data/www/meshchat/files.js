@@ -92,12 +92,12 @@ function load_files() {
             }
             html += '<td><a href="http://' + data.files[i].node + port + '/cgi-bin/meshchat?action=file_download&file=' + encodeURIComponent(data.files[i].file) + '">' + data.files[i].file + '</a></td>';
             html += '<td>' + numeral(data.files[i].size).format('0.0 b') + '</td>';
-            html += '<td>' + data.files[i].node + '</td>';
-            html += '<td>' + format_date(date) + '</td>';
+            html += '<td class="col_node">' + data.files[i].node + '</td>';
+            html += '<td class="col_time">' + format_date(date) + '</td>';
             if (data.files[i].local == 1) {
-                html += '<td><button class="delete-button button-primary" file-name="' + data.files[i].file + '">Delete</button></td>';
+                html += '<td class="col_delete"><button class="delete-button button-primary" file-name="' + data.files[i].file + '">Delete</button></td>';
             } else {
-                html += '<td></td>';
+                html += '<td class="col_delete"></td>';
             }
             html += '</tr>';
         }
