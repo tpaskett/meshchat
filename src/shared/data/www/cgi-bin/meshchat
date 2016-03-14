@@ -56,6 +56,9 @@ elsif ( $query{action} eq 'delete_file' ) {
 elsif ( $query{action} eq 'messages_version' ) {
     messages_version();
 }
+elsif ( $query{action} eq 'messages_version_ui' ) {
+    messages_version_ui();
+}
 elsif ( $query{action} eq 'hosts' ) {
     hosts();
 }
@@ -451,6 +454,54 @@ sub messages_version {
     print $ver;
 }
 
+sub messages_version_ui {
+    my $ver = get_messages_db_version();
+
+    print "Content-type:application/json\r\n\r\n";
+
+    print '{"messages_version":' . $ver . '}';
+
+    get_lock();
+
+    my %users;
+
+    open( USERS, $local_users_status_file );
+    while (<USERS>) {
+        my $line = $_;
+        chomp($line);
+
+        my @parts = split( "\t", $line );
+
+        if ( $#parts > 2 ) { $users{ $parts[0] } = $line; }
+    }
+    close(USERS);
+
+    my $found_user = 0;
+
+    my $epoch = time();
+
+    if ( $query{epoch} > $epoch ) { $epoch = $query{epoch}; }
+
+    open( USERS, '>' . $local_users_status_file );
+    foreach my $call_sign ( keys %users ) {
+        if ( $call_sign eq $query{call_sign} ) {
+            print USERS "$query{call_sign}\t$query{id}\t$node\t$epoch\t$platform\n";
+            $found_user = 1;
+        }
+        else {
+            print USERS "$users{$call_sign}\n";
+        }
+    }
+
+    if ( $found_user == 0 ) {
+        print USERS "$query{call_sign}\t$query{id}\t$node\t$epoch\t$platform\n";
+    }
+
+    close(USERS);
+
+    release_lock();
+}
+
 sub users {
     print "Content-type:application/json\r\n\r\n";
 
@@ -556,30 +607,39 @@ sub files {
     }
     closedir($dh);
 
-    open( FILES, $remote_files_file );
-    while (<FILES>) {
-        my $line = $_;
-        chomp($line);
+    opendir( my $dh, $meshchat_path );
+    my $file;
 
-        my @parts = split( "\t", $line );
+    while ( $file = readdir($dh) ) {
+        if ( $file =~ /^remote_files\..*/ ) {
+            open( FILES, $meshchat_path . '/' . $file );
+            while (<FILES>) {
+                my $line = $_;
+                chomp($line);
 
-        #print "$line\n";
+                my @parts = split( "\t", $line );
 
-        if ( $parts[3] > 0 ) {
-            push(
-                @$files,
-                {
-                    file     => $parts[0],
-                    epoch    => $parts[3],
-                    size     => $parts[2],
-                    node     => $parts[1],
-                    local    => 0,
-                    platform => $parts[4]
+                #print "$line\n";
+
+                if ( $parts[3] > 0 ) {
+                    push(
+                       @$files,
+                        {
+                            file     => $parts[0],
+                            epoch    => $parts[3],
+                            size     => $parts[2],
+                            node     => $parts[1],
+                            local    => 0,
+                            platform => $parts[4]
+                        }
+                    );
                 }
-            );
+            }
+
+            close(FILES);
         }
     }
-    close(FILES);
+    closedir($dh);
 
     release_lock();
 

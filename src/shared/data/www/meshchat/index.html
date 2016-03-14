@@ -89,22 +89,31 @@
             <div class="row updated">
                 <div class="six columns center" id="callsign">
                 </div>
-                <div class="six columns center" id="last-update">
+                <div class="six columns center">
+                    <span id="last-update">
                     <strong>
                         Updated:
                     </strong>
                     0 secs ago
+                    </span>
+                    <!-- <div class="pull-right" id="message-expand">&#x25BC;</div> -->
+                </div>
+            </div>
+            <div class="row">
+                <div class="tweleve columns">
+                    <div id="ohsnap">
+                    </div>
                 </div>
             </div>
             <div class="row">
                 <div class="six columns">
-                    <div class="panel send-message-panel">
+                    <div class="panel send-message-panel" id="message-panel">
                         <div class="panel-header">
                             Send a Message
                         </div>
-                        <div class="panel-body">
+                        <div class="panel-body" id="message-panel-body">
                             <form>
-                                <label for="message">
+                                <label for="message" id="new-message-label">
                                     New Message
                                 </label>
                                 <textarea maxlength="1000" class="u-full-width" placeholder="Enter message here" id="message">
@@ -120,22 +129,17 @@
                                 </select>
                                 <button id="submit-message" class="button-primary">
                                     Send
-                                </button>
-                                <br/>
-                                <br/>
-                                <button id="download-messages" class="button-primary">
-                                    Download Messages
-                                </button>
+                                </button>                            
                             </form>
                         </div>
                     </div>
-                </div>
+                </div>                
                 <div class="six columns">
-                    <div class="panel users-panel">
+                    <div class="panel users-panel" id="users-panel">
                         <div class="panel-header">
                             Mesh Chat Users
                         </div>
-                        <div class="panel-body users-panel-body">
+                        <div class="panel-body users-panel-body" id="users-panel-body">
                             <table class="u-full-width remote" id="remote-users">
                                 <thead>
                                     <tr>
@@ -156,19 +160,19 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="tweleve columns">
-                    <div id="ohsnap">
-                    </div>
-                </div>
-            </div>
+            </div>        
             <div class="row">
                 <div class="tweleve columns">
                     <div class="panel">
                         <div class="panel-header">
                             Messages
                             <div class="pull-right">
+                                <span id="search-span">Search:
+                                <input type="text" value="" id="search" placeholder="Enter search">
+                                &nbsp;
+                                &nbsp;
+                                &nbsp;
+                                </span>
                                 Channel:                                
                                 <select id="channels">
                                     <option value="">

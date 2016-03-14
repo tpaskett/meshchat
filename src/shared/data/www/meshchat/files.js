@@ -22,6 +22,10 @@ $(function() {
             event.preventDefault();
         }
     });
+    $('#download-messages').on('click', function(e) {
+        e.preventDefault();
+        location.href = '/cgi-bin/meshchat?action=messages_download';
+    });
     $("#upload-button").on("click", function(event) {
         event.preventDefault();
         //$('#upload-form').submit();

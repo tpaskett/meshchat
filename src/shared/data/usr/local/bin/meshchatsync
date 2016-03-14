@@ -92,12 +92,20 @@ while (1) {
 
         if ( $output =~ /Content\-MD5\: (.*)\r\n/ ) {
             my $file_md5 = file_md5( $meshchat_path . '/remote_files' );
+            dbg "MD5 $file_md5 $1";
             if ( $file_md5 eq $1 ) {
                 my $cur_size = file_size( $meshchat_path . '/remote_files' );
 
                 if ( $cur_size > 0 ) {
-                    merge_files($remote_node);
+                    dbg "save file list $cur_size";
+                    rename($meshchat_path . '/remote_files', $meshchat_path . '/remote_files.' . $remote_node);
+                } else {
+                    dbg "remove file list";
+                    unlink($meshchat_path . '/remote_files.' . $remote_node);
                 }
+            } else {
+                dbg "remove file list";
+                unlink($meshchat_path . '/remote_files.' . $remote_node);
             }
         }
 
@@ -290,54 +298,6 @@ sub merge_users {
     }
 
     close(USERS);
-
-    release_lock();
-}
-
-sub merge_files {
-    my $remote_node = shift;
-    my %rfiles;
-    my %lfiles;
-    my %done;
-
-    dbg "merge_files";
-
-    open( RFILES, $meshchat_path . '/remote_files' );
-    while (<RFILES>) {
-        dbg "LINE: $_";
-        my @parts = split( "\t", $_ );
-        $key = $parts[0];
-        if ( $_ !~ /error/ && $#parts > 2 ) { $rfiles{$key} = $_; }
-    }
-    close(RFILES);
-
-    get_lock();
-
-    open( LFILES, $remote_files_file );
-    while (<LFILES>) {
-        my @parts = split( "\t", $_ );
-        $key = $parts[0];
-        if ( $_ !~ /error/ && $#parts > 2 ) { $lfiles{$key} = $_; }
-    }
-    close(LFILES);
-
-    open( FILES, '>' . $remote_files_file );
-
-    foreach my $file_node ( keys %rfiles ) {
-        dbg "R *$file_node* *$remote_node* $rfiles{$file_node}\n";
-        print FILES $rfiles{$file_node};
-    }
-
-    foreach my $file_node ( keys %lfiles ) {
-        my @parts = split( "\t", $lfiles{$file_node} );
-        dbg "L *$parts[1]* *$remote_node* $lfiles{$file_node}\n";
-        if ( $parts[1] ne $remote_node ) {
-            dbg "WROTE!\n";
-            print FILES $lfiles{$file_node};
-        }
-    }
-
-    close(FILES);
 
     release_lock();
 }

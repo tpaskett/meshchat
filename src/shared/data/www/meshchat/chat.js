@@ -10,6 +10,9 @@ var messages = [];
 var channel_filter = '';
 var messages_version = 0;
 var alert = new Audio('alert.mp3');
+var message_db_version = 0;
+var pending_message_db_version = 0;
+var search_filter = '';
 
 $(function() {
     meshchat_init();
@@ -53,7 +56,6 @@ function meshchat_init() {
         $(this).prop("disabled", true);
         $('#message').prop("disabled", true);
         $(this).html('<div class="loading"></div>');
-        $('#download-messages').hide();
 
         var channel = $('#send-channel').val();
 
@@ -68,6 +70,7 @@ function meshchat_init() {
             tryCount : 0,
             retryLimit : 3,
             cache: false,
+            timeout: 5000,
             data:
             {
                 action: 'send_message',
@@ -108,7 +111,6 @@ function meshchat_init() {
                 $(this).prop("disabled", false);
                 $('#message').prop("disabled", false);
                 $(this).html('Send');
-                $('#download-messages').show();
             }
         });
     });
@@ -123,15 +125,23 @@ function meshchat_init() {
         $('#callsign').html('<strong>Call Sign:</strong> ' + Cookies.get('meshchat_call_sign'));
         start_chat();
     });    
-    
-    $('#download-messages').on('click', function(e) {
-        e.preventDefault();
-        location.href = '/cgi-bin/meshchat?action=messages_download';
-    });
 
     $('#channels').on('change', function() {        
         channel_filter = this.value;
         process_messages();
+    });
+
+    $('#search').keyup(function() {        
+        console.log(this.value);
+        search_filter = this.value;
+        process_messages();
+    });
+
+    $('#message-expand').on('click', function(e) {  
+        $('#message-panel').toggleClass('message-panel-collapse');
+        $('#message-panel-body').toggleClass('message-panel-body-collapse');    
+        $('#users-panel').toggleClass('users-panel-collapse');
+        $('#users-panel-body').toggleClass('users-panel-body-collapse');
     });
 
     $('#send-channel').on('change', function() {
@@ -164,6 +174,39 @@ function load_messages() {
     messages_updating = true;
 
     $.ajax({
+        url: '/cgi-bin/meshchat?action=messages_version_ui&call_sign=' + call_sign + '&id=' + meshchat_id + '&epoch=' + epoch(),
+        type: "GET",
+        dataType: "json",
+        context: this,
+        cache: false,
+        success: function(data, textStatus, jqXHR)
+        {            
+            if (data == null) {
+                messages_updating = false;
+                return;
+            }
+
+            if (data.messages_version != message_db_version) {
+                pending_message_db_version = data.messages_version;
+                fetch_messages();
+            } else {
+                messages_updating = false;
+                last_messages_update = epoch();
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown)
+        {
+            messages_updating = false;
+        },
+        complete: function(jqXHR, textStatus) {
+
+        }
+    });
+    
+}
+
+function fetch_messages() {
+    $.ajax({
         url: '/cgi-bin/meshchat?action=messages&call_sign=' + call_sign + '&id=' + meshchat_id + '&epoch=' + epoch(),
         type: "GET",
         dataType: "json",
@@ -177,6 +220,7 @@ function load_messages() {
 
             process_messages();
             last_messages_update = epoch();
+            message_db_version = pending_message_db_version;
         },
         complete: function(jqXHR, textStatus) {
             //console.log( "messages complete" );
@@ -204,14 +248,33 @@ function process_messages() {
 
     var total = 0;
 
+    var search = search_filter.toLowerCase();
+
     for (var i = 0; i < messages.length; i++) {
         var row = '';        
         var date = new Date(0);
         date.setUTCSeconds(messages[i].epoch);
         var message = messages[i].message;
         message = message.replace(/(\r\n|\n|\r)/g, "<br/>");
+
+        var id = parseInt(messages[i].id, 16);
+        total += id;
+
+        var formated_date = format_date(date);
+
+        if (search != '') {
+            console.log(search);
+            console.log(message.toLowerCase());
+            if (message.toLowerCase().search(search) == -1 &&
+                messages[i].call_sign.toLowerCase().search(search) == -1 &&
+                messages[i].node.toLowerCase().search(search) == -1 &&
+                formated_date.toLowerCase().search(search) == -1) {
+                continue;
+            }
+        }
+
         row += '<tr>';
-        row += '<td>' + format_date(date) + '</td>';
+        row += '<td>' + formated_date + '</td>';
         row += '<td>' + message + '</td>';
         row += '<td>' + messages[i].call_sign + '</td>';
         row += '<td class="col_channel">' + messages[i].channel + '</td>';
@@ -230,10 +293,7 @@ function process_messages() {
             if (channel_filter == messages[i].channel) html += row;
         } else {
             html += row;
-        }
-
-        var id = parseInt(messages[i].id, 16);
-        total += id;
+        }        
     }
 
     if (messages_version != 0) {
