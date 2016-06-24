@@ -24,7 +24,7 @@ case "$1" in
   stop)
     log_begin_msg "Stopping meshchatsync"
 
-    killall meshchatsync > /dev/null
+    kill `ps ax | grep meshchatsync | grep perl | awk '{print $1}'` > /dev/null
 
     log_end_msg $?
     exit 0

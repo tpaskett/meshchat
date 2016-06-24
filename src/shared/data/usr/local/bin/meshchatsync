@@ -34,6 +34,8 @@ chmod( 0777, $meshchat_path );
 while (1) {
     my $node_list = node_list();
 
+    $messages_db_file = $messages_db_file_orig . '.' . zone_name();
+
     $new_messages = 0;
     %sync_status  = ();
 

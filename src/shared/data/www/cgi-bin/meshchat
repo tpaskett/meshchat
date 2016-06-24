@@ -119,6 +119,12 @@ sub config {
     print "{\"version\":\"$version\",\"node\":\"$node\",\"zone\":\"$zone_name\"}";
 }
 
+sub json_encode_string {
+  my $str = shift;
+  $str =~ s!([\x00-\x1f\x{2028}\x{2029}\\"/])!$REVERSE{$1}!gs;
+  return "\"$str\"";
+}
+
 sub messages {
     print "Content-type:application/json\r\n\r\n";
 
@@ -192,12 +198,34 @@ sub messages {
 
     my @sorted = sort { $b->{epoch} <=> $a->{epoch} } @$messages;
 
+    # JSON encoding data
+    # Escaped special character map with u2028 and u2029
+    my %ESCAPE = (
+      '"'     => '"',
+      '\\'    => '\\',
+      '/'     => '/',
+      'b'     => "\x08",
+      'f'     => "\x0c",
+      'n'     => "\x0a",
+      'r'     => "\x0d",
+      't'     => "\x09",
+      'u2028' => "\x{2028}",
+      'u2029' => "\x{2029}"
+    );
+    my %REVERSE = map { $ESCAPE{$_} => "\\$_" } keys %ESCAPE;
+
+    for (0x00 .. 0x1f) {
+      my $packed = pack 'C', $_;
+      $REVERSE{$packed} = sprintf '\u%.4X', $_ unless defined $REVERSE{$packed};
+    }
+
     my $json = '[';
 
     foreach my $message (@sorted) {
-        $message->{message} =~ s/\n/\\n/g;
-        $message->{message} =~ s/\"/\\"/g;
-        $json .= '{"id":"' . $message->{id} . '","epoch":' . $message->{epoch} . ',"message":"' . $message->{message} . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '","channel":"' . $message->{channel} . '"},';
+        my $str = $message->{message};
+        $str =~ s!([\x00-\x1f\x{2028}\x{2029}\\"/])!$REVERSE{$1}!gs;
+
+        $json .= '{"id":"' . $message->{id} . '","epoch":' . $message->{epoch} . ',"message":"' . $str . '","call_sign":"' . $message->{call_sign} . '","node":"' . $message->{node} . '","platform":"' . $message->{platform} . '","channel":"' . $message->{channel} . '"},';
     }
 
     if ( length($json) > 1 ) {
@@ -316,9 +344,9 @@ sub file_download {
 
     print "Content-MD5: $md5\r\n";
 
-    print "Content-Disposition: attachment; filename=$file;\r\n";
+    print "Content-Disposition: attachment; filename=\"$file\";\r\n";
 
-    print "Content-type:text\r\n\r\n";
+    print "Content-type: application/octet-stream\r\n\r\n";
 
     open( FILE, $file_path );
     binmode FILE;
@@ -378,7 +406,7 @@ sub local_files_raw {
 
     foreach my $file (@files) {
         my @stats = stat("$local_files_dir/$file");
-        print FILES "$file\t$node\t$stats[7]\t$stats[9]\t$platform\n";
+        print FILES "$file\t$node:$ENV{SERVER_PORT}\t$stats[7]\t$stats[9]\t$platform\n";
     }
 
     close(FILES);
@@ -598,9 +626,9 @@ sub files {
                     file     => $file,
                     epoch    => file_epoch( $local_files_dir . '/' . $file ),
                     size     => file_size( $local_files_dir . '/' . $file ),
-                    node     => $node,
+                    node     => $node . ':' . $ENV{SERVER_PORT},
                     local    => 1,
-                    platform => 'node'
+                    platform => $platform
                 }
             );
         }

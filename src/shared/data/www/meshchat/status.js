@@ -14,18 +14,24 @@ function monitor_last_update() {
 function load_status() {
     $.getJSON('/cgi-bin/meshchat?action=sync_status', function(data) {
 		var html = '';
+		var count = 0;
 
 		for (var i = 0; i < data.length; i++) {
 	    	var date = new Date(0);
 		    date.setUTCSeconds(data[i].epoch);
 
+			//if ((epoch() - data[i].epoch) > 60 * 60) continue;		
+
 		    html += '<tr>';
-	    	html += '<td><a href="http://' + data[i].node + ':8080">' + data[i].node + '</a></td>';
+	    	html += '<td>' + data[i].node + '</td>';
 		    html += '<td>' + format_date(date) + '</td>';
 		    html += '</tr>';
+
+		    count++;
 		}
 
 		$('#sync-table').html(html);
+		$('#sync-count').html(count);
 
 		last_update = epoch();
     });
@@ -35,7 +41,7 @@ function load_status() {
 
 		for (var i = 0; i < data.length; i++) {
 	    	var date = new Date(0);
-		    date.setUTCSeconds(data[i].action_epoch);
+		    date.setUTCSeconds(data[i].action_epoch);            
 
 		    html += '<tr>';
 		    html += '<td>' + format_date(date) + '</td>';

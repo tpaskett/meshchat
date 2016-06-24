@@ -4,6 +4,7 @@ our $max_messages_db_size       = 500;
 our $max_file_storage           = 2 * 1024 * 1024;
 our $lock_file                  = $meshchat_path . '/lock';
 our $messages_db_file           = '/var/www/html/meshchat/db/messages';
+our $messages_db_file_orig      = '/var/www/html/meshchat/db/messages';
 our $action_log_file            = '/var/www/html/meshchat/db/action.log';
 our $action_error_log_file      = '/var/www/html/meshchat/db/action_error.log';
 our $action_messages_log_file   = '/var/www/html/meshchat/db/action_messages.log';

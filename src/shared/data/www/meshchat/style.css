@@ -177,52 +177,6 @@ button.button-primary:hover {
     border-color: #337ab7;
 }
 
-/*
-#message-table tr td:nth-child(4) {
-    display: none;
-}
-
-#message-header tr th:nth-child(4) {
-    display: none;
-}
-*/
-
-@media (min-width: 400px) {
-    th, td {
-        padding-top: 5px;
-        padding-right: 15px;
-    }
-    /*
-    #message-table tr td:nth-child(4) {
-  display: block!important;
-    }
-    
-    #message-header tr th:nth-child(4) {
-  display: block!important;
-    }
-    */
-    body {
-        font-size: 1.5em;
-    }
-    .logout {
-        float: right;
-    }
-    .navbar-link {
-        font-size: 13px;
-        text-transform: uppercase;
-        font-weight: 600;
-        letter-spacing: .2rem;
-        margin-right: 35px;
-        text-decoration: none;
-        line-height: 6.5rem;
-        color: #222;
-    }
-    .last-updated {
-        /*float: right;*/
-        margin-top: 12px;
-    }
-}
-
 .button, button, input[type="submit"], input[type="reset"], input[type="button"]{ line-height: 1; }
 
 .center {
@@ -377,6 +331,19 @@ form {
     cursor: pointer;
 }
 
+th, td{ padding-right: 10px; padding-left: 10px; }
+.message td:nth-child(1),
+.message th:nth-child(1){ width: 10%; }
+.message td:nth-child(2),
+.message th:nth-child(2){ width: 50%; }
+.message td:nth-child(3),
+.message th:nth-child(3){ width: 12%; }
+.message td:nth-child(4),
+.message th:nth-child(4){ width: 16%; }  
+.message td:nth-child(5),
+.message th:nth-child(5){ width: 12%; }  
+.message td { word-wrap: break-word; }
+
 @media (max-width: 1000px) {
     .users-panel {
         height: 260px;    
@@ -403,27 +370,24 @@ form {
 }
 @media (max-width: 767px) {
     th, td{ padding-right: 4px; padding-left: 4px; }
-    /*
-    .remote,
-    .message{ table-layout: fixed; }
+
+    th.col_node, td.col_node, th.col_channel, td.col_channel, th.col_time, td.col_time {
+        display:none;
+        width:0;
+        height:0;
+        opacity:0;
+        visibility: collapse;       
+    } 
+
     .message td:nth-child(1),
-    .message th:nth-child(1){ width: 25%; }
+    .message th:nth-child(1){ width: 20%; }
     .message td:nth-child(2),
-    .message th:nth-child(2){ width: 50%; }
+    .message th:nth-child(2){ width: 55%; }
     .message td:nth-child(3),
     .message th:nth-child(3){ width: 25%; }
     .message td:nth-child(4),
-    .message th:nth-child(4){ width: 30%; }
-    .remote th:nth-child(1),
-    .remote td:nth-child(1){ width: 20%; }
-    .remote td:nth-child(2),
-    .remote th:nth-child(2){ width: 40%; }
-    .remote th:nth-child(3),
-    .remote td:nth-child(3){ width: 40%; }
-    .message td,
-    .remote td{ word-wrap: break-word; }
-    td:first-child{ white-space: normal; }
-    */
+    .message th:nth-child(4){ width: 0%; } 
+    
     body {
         font-size: 1.3em;
     }   
@@ -441,18 +405,6 @@ form {
     } 
 }
 
-/*
-@media (max-width: 550px) {
-    .users-panel {
-        height: 220px;    
-    }
-
-    .send-message-panel {
-        height: 220px;
-    } 
-}
-*/
-
 @media (max-width: 600px) {
     #search-span {
         display: none;
@@ -468,22 +420,38 @@ form {
 }
 
 @media (max-width: 460px) {
-    th.col_node, td.col_node, th.col_channel, td.col_channel, th.col_time, td.col_time {
-        display:none;
-        width:0;
-        height:0;
-        opacity:0;
-        visibility: collapse;       
-    } 
-
-    #message-parent-table {
-        table-layout: auto;
-    }
-
     #files-parent-table {
         table-layout: auto;
         font-size: 1.0em;
     }    
+}
+
+@media (min-width: 400px) {
+    th, td {
+        padding-top: 5px;
+        padding-right: 15px;
+    }
+    
+    body {
+        font-size: 1.5em;
+    }
+    .logout {
+        float: right;
+    }
+    .navbar-link {
+        font-size: 13px;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: .2rem;
+        margin-right: 35px;
+        text-decoration: none;
+        line-height: 6.5rem;
+        color: #222;
+    }
+    .last-updated {
+        /*float: right;*/
+        margin-top: 12px;
+    }
 }
 
 @keyframes loading {

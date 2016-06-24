@@ -2,9 +2,9 @@ BEGIN { push @INC, '/www/cgi-bin', '/usr/lib/cgi-bin' }
 
 use meshchatconfig;
 
-our $version = '0.7b4';
+our $version = '0.7b7';
 
-$messages_db_file = $messages_db_file . '.' . zone_name();
+$messages_db_file = $messages_db_file_orig . '.' . zone_name();
 
 if ( $platform eq 'node' && -d '/mnt/usb/meshchat/files' ) {
     $local_files_dir = '/mnt/usb/meshchat/files';
@@ -347,7 +347,8 @@ sub process_message_action {
 
     dbg "running action\n";
 
-    `perl /usr/local/bin/meshchat_action.pl $action_file > /tmp/ma.log 2>&1 &`;
+    `perl /usr/local/bin/meshchat_action.pl $action_file > /tmp/mechchat_action.log 2>&1 &`;
+    chmod( 0666, '/tmp/mechchat_action.log' );
 }
 
 # Save a error message when processing an action script to the log file.

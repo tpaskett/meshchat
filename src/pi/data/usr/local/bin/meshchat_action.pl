@@ -56,14 +56,16 @@ chomp($line);
 my ($id, $epoch, $message, $call_sign, $node, $platform, $channel) = split(/\t/, $line);
 
 # Check if we have ran actions on this message id already
-my $result = `grep -P '^$id\$' $action_messages_log_file`;
+my $result = `grep -P '^$id' $action_messages_log_file`;
+
+#print "$id result = $result\n";
 
 if ($result ne '') {
     action_error_log("Already processed message id: $id");
-    exit();
+    exit;
 }
 
-my $log_file = '/tmp/ms.log';
+my $log_file = '/tmp/meshchat_script.log';
 
 foreach my $action (@$actions) {
     if ($$action{channel} eq '*' && $$action{hashtag} eq '*') {
@@ -84,6 +86,8 @@ foreach my $action (@$actions) {
         `perl /usr/local/bin/meshchat_script.pl 'Channel $$action{channel} match and #$$action{hashtag} match' $$action{script} $script_file $$action{timeout} > $log_file 2>&1 &`;  
     }
 }
+
+chmod( 0666, $log_file );
 
 unlink($file);
 

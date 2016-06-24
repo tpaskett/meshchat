@@ -132,7 +132,7 @@ function meshchat_init() {
     });
 
     $('#search').keyup(function() {        
-        console.log(this.value);
+        //console.log(this.value);
         search_filter = this.value;
         process_messages();
     });
@@ -263,14 +263,18 @@ function process_messages() {
         var formated_date = format_date(date);
 
         if (search != '') {
-            console.log(search);
-            console.log(message.toLowerCase());
+            //console.log(search);
+            //console.log(message.toLowerCase());
             if (message.toLowerCase().search(search) == -1 &&
                 messages[i].call_sign.toLowerCase().search(search) == -1 &&
                 messages[i].node.toLowerCase().search(search) == -1 &&
                 formated_date.toLowerCase().search(search) == -1) {
                 continue;
             }
+        }
+
+        if (messages[i].channel == null) {
+            messages[i].channel = "";
         }
 
         row += '<tr>';
@@ -354,6 +358,7 @@ function load_users() {
         {
             var html = '';
             if (data == null) return;
+            var count = 0;
             for (var i = 0; i < data.length; i++) {
                 var date = new Date(0);
                 date.setUTCSeconds(data[i].epoch);
@@ -375,8 +380,11 @@ function load_users() {
                 }
                 html += '<td>' + format_date(date) + '</td>';
                 html += '</tr>';
+
+                count++;
             }
             $('#users-table').html(html);
+            $('#users-count').html(count);
         },
         complete: function(jqXHR, textStatus) {
             //console.log( "users complete" );

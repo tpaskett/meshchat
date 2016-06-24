@@ -47,7 +47,7 @@ open(FILE, "<$file");
 my $line = <FILE>;
 close(FILE);
 
-#unlink($file);
+unlink($file);
 
 get_lock();
 

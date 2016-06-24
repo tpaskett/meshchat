@@ -4,6 +4,7 @@ our $max_messages_db_size       = 500;
 our $max_file_storage           = 512 * 1024;
 our $lock_file                  = $meshchat_path . '/lock';
 our $messages_db_file           = $meshchat_path . '/messages';
+our $messages_db_file_orig      = $meshchat_path . '/messages';
 our $sync_status_file           = $meshchat_path . '/sync_status';
 our $local_users_status_file    = $meshchat_path . '/users_local';
 our $remote_users_status_file   = $meshchat_path . '/users_remote';

@@ -3,7 +3,7 @@
 a2enmod cgi > /dev/null 2>&1
 service apache2 restart > /dev/null 2>&1
 
-update-rc.d meshchatsync defaults 99
+update-rc.d meshchatsync defaults 99 > /dev/null 2>&1
 
 APACHE_USER=$(ps aux | egrep '(apache|httpd)' | grep -v root | head -n 1 | awk '{print $1}')
 
@@ -12,8 +12,8 @@ mkdir -p /var/www/html/meshchat/files
 chown -R $APACHE_USER:$APACHE_USER /var/www/html/meshchat
 chown $APACHE_USER:$APACHE_USER /usr/lib/cgi-bin/meshchat*
 
-ln -s /var/www/html/meshchat /var/www/meshchat
+ln -s /var/www/html/meshchat /var/www/meshchat 2> /dev/null
 
-/etc/init.d/meshchatsync start
+/etc/init.d/meshchatsync start > /dev/null 2>&1
 
 exit 0

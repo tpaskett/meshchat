@@ -87,8 +87,17 @@ function load_files() {
             date.setUTCSeconds(data.files[i].epoch);
             html += '<tr>';
             var port = '';
-            if (data.files[i].platform == 'node') {
-                port = ':8080'
+
+            console.log(data);
+
+            if (data.files[i].node.match(':')) {
+                var parts = data.files[i].node.split(':');
+                data.files[i].node = parts[0];
+                port = ':' + parts[1];
+            } else {
+                if (data.files[i].platform == 'node') {
+                    port = ':8080'
+                }
             }
             html += '<td><a href="http://' + data.files[i].node + port + '/cgi-bin/meshchat?action=file_download&file=' + encodeURIComponent(data.files[i].file) + '">' + data.files[i].file + '</a></td>';
             html += '<td>' + numeral(data.files[i].size).format('0.0 b') + '</td>';
@@ -102,6 +111,7 @@ function load_files() {
             html += '</tr>';
         }
         $('#files-table').html(html);
+        $('#files-count').html(data.files.length + ' Files');
         $('#total-bytes').html('Total Storage: ' + numeral(data.stats.allowed).format('0.0 b'));
         $('#free-bytes').html('Free Storage: ' + numeral(data.stats.files_free).format('0.0 b'));
         free_space = data.stats.files_free;
