@@ -1,8 +1,8 @@
-Package: meshchat
+Package: meshchat-api
 Version: 1.0
-Depends: curl
+Depends:
 Provides: 
-Source: package/meshchat
+Source: package/meshchat-api
 Section: net
 Priority: optional
 Maintainer: Trevor Paskett (K7FPV)

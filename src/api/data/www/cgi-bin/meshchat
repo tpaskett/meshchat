@@ -1,0 +1,58 @@
+#!/usr/bin/perl
+
+$| = 1;
+
+my %query;
+
+parse_params();
+
+if ( $query{action} eq 'meshchat_nodes' ) {
+    meshchat_nodes();
+}
+else {
+    error('error no action');
+}
+
+sub parse_params {
+    my $post_data;
+
+    if ( length( $ENV{'QUERY_STRING'} ) > 0 ) {
+        $post_data = $ENV{'QUERY_STRING'};
+    }
+    else {
+        foreach my $data (<STDIN>) {
+            $post_data .= $data;
+        }
+    }
+
+    if ( length($post_data) > 0 ) {
+        $buffer = $post_data;
+        @pairs = split( /&/, $buffer );
+        foreach $pair (@pairs) {
+            ( $name, $value ) = split( /=/, $pair );
+            $value =~ s/\+/ /g;
+            $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+            $query{$name} = $value;
+        }
+    }
+}
+
+sub error {
+    my $msg = shift;
+
+    print "Content-type:text\r\n\r\n";
+    print $msg;
+}
+
+sub meshchat_nodes {
+    print "Content-type: text/plain\r\n\r\n";
+
+    my $zone_name = $query{zone_name};
+
+    foreach (`grep -i "/meshchat|" /var/run/services_olsr | grep \$'|$zone_name\t'`) {
+        chomp;
+        if ($_ =~ /^http:\/\/(.*)\:(\d+)\//) {
+            print "$1\t$2\n";
+        }
+    }
+}
