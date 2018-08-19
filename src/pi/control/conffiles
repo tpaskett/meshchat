@@ -1,1 +1,2 @@
 /etc/meshchat_actions.conf
+/usr/lib/cgi-bin/meshchatconfig.pm

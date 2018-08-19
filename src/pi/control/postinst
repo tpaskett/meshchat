@@ -14,6 +14,12 @@ chown $APACHE_USER:$APACHE_USER /usr/lib/cgi-bin/meshchat*
 
 ln -s /var/www/html/meshchat /var/www/meshchat 2> /dev/null
 
+# Check for stretch
+if grep -Fxq "9.0" /etc/debian_version
+then
+	cp /usr/lib/cgi-bin/mechchatconfig-stretch.pm /usr/lib/cgi-bin/mechchatconfig.pm
+fi
+
 /etc/init.d/meshchatsync start > /dev/null 2>&1
 
 exit 0

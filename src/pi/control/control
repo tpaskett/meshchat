@@ -1,7 +1,7 @@
 Package: meshchat
-Version: 1.0
+Version: 1.01
 Depends: curl, apache2
-Provides: 
+Provides:
 Source: package/meshchat
 Section: net
 Priority: optional

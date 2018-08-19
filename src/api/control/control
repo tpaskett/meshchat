@@ -1,7 +1,7 @@
 Package: meshchat-api
-Version: 1.0
+Version: 1.01
 Depends:
-Provides: 
+Provides:
 Source: package/meshchat-api
 Section: net
 Priority: optional

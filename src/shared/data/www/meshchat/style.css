@@ -201,11 +201,13 @@ button.button-primary:hover {
 
 #send-channel {
     margin-right: 10px;
+    max-width: 250px;
 }
 
 #channels {
     vertical-align: top;
     margin-top: -5px;
+    max-width: 250px;
 }
 
 #search {
@@ -270,12 +272,12 @@ select {
 }
 
 .users-panel {
-    height: 220px;
+    min-height: 220px;
     overflow: hidden;
 }
 
 .send-message-panel {
-    height: 220px;
+    min-height: 220px;
 }
 
 .users-panel-body {
@@ -452,6 +454,11 @@ th, td{ padding-right: 10px; padding-left: 10px; }
         /*float: right;*/
         margin-top: 12px;
     }
+}
+
+.col_time {
+    width: 70px;
+    max-width: 70px;
 }
 
 @keyframes loading {

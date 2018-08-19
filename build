@@ -19,7 +19,7 @@ cd ../control
 tar cfz ../../../control.tar.gz .
 cd ../../..
 gzip data.tar
-COPYFILE_DISABLE=1 tar cfz meshchat_1.0_all.ipk control.tar.gz data.tar.gz debian-binary
+COPYFILE_DISABLE=1 tar cfz meshchat_1.01_all.ipk control.tar.gz data.tar.gz debian-binary
 
 ### Build AREDN API package
 rm -rf data.tar.gz control.tar.gz
@@ -30,7 +30,7 @@ cd ../control
 tar cfz ../../../control.tar.gz .
 cd ../../..
 gzip data.tar
-COPYFILE_DISABLE=1 tar cfz meshchat-api_1.0_all.ipk control.tar.gz data.tar.gz debian-binary
+COPYFILE_DISABLE=1 tar cfz meshchat-api_1.01_all.ipk control.tar.gz data.tar.gz debian-binary
 
 ### Build pi package
 rm -rf data.tar.gz control.tar.gz
@@ -39,11 +39,11 @@ mkdir -p tmp/var/www/html
 mkdir -p tmp/usr/lib/cgi-bin
 
 cd src/shared/data
-cp -R www/meshchat ../../../tmp/var/www/html/	
+cp -R www/meshchat ../../../tmp/var/www/html/
 cp -R usr ../../../tmp/
 cp www/cgi-bin/* ../../../tmp/usr/lib/cgi-bin/
 
-cd ../../pi/data	
+cd ../../pi/data
 cp -R etc ../../../tmp/
 cp -R usr ../../../tmp/
 cp www/cgi-bin/* ../../../tmp/usr/lib/cgi-bin/
@@ -54,5 +54,5 @@ tar cfz ../data.tar.gz `find . -type f`
 cd ../src/pi/control
 tar cfz ../../../control.tar.gz .
 cd ../../..
-COPYFILE_DISABLE=1 ar r meshchat_1.0_all.deb debian-binary control.tar.gz data.tar.gz
+COPYFILE_DISABLE=1 ar r meshchat_1.01_all.deb debian-binary control.tar.gz data.tar.gz
 rm -rf tmp

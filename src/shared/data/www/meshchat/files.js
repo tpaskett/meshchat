@@ -79,16 +79,27 @@ function upload_progress(event) {
     }
 }
 
+function fileNameCompare(a, b) {
+    if (a.file < b.file)
+        return -1;
+    if (a.file > b.file)
+        return 1;
+    return 0;
+}
+
 function load_files() {
     $.getJSON('/cgi-bin/meshchat?action=files', function(data) {
         var html = '';
+
+        data.files.sort(fileNameCompare);
+
         for (var i = 0; i < data.files.length; i++) {
             var date = new Date(0);
             date.setUTCSeconds(data.files[i].epoch);
             html += '<tr>';
             var port = '';
 
-            console.log(data);
+            //console.log(data);
 
             if (data.files[i].node.match(':')) {
                 var parts = data.files[i].node.split(':');
