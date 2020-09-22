@@ -2,7 +2,7 @@ BEGIN { push @INC, '/www/cgi-bin', '/usr/lib/cgi-bin' }
 
 use meshchatconfig;
 
-our $version = '1.01';
+our $version = '1.02';
 
 $messages_db_file = $messages_db_file_orig . '.' . zone_name();
 

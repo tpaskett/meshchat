@@ -1,5 +1,5 @@
 Package: meshchat-api
-Version: 1.01
+Version: 1.02
 Depends:
 Provides:
 Source: package/meshchat-api
