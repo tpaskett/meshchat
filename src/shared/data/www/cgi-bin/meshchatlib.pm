@@ -246,10 +246,10 @@ sub pi_node_list {
         if ( lc($local_node) eq lc($node) ) { next; }
 
         if ( $port == 8080 ) {
-            push( @$nodes, { platform => 'node', node => lc($node) } );
+            push( @$nodes, { platform => 'node', node => lc($node), port => $port } );
         }
         else {
-            push( @$nodes, { platform => 'pi', node => lc($node) } );
+            push( @$nodes, { platform => 'pi', node => lc($node), port => $port } );
         }
     }
 
